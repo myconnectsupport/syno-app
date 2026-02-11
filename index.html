@@ -363,13 +363,13 @@
                 <label>Type d'appareil</label>
                 <select id="newType" onchange="updateFormFields(this.value)">
                     <option value="routeur">Routeur Mikrotik</option>
-                    <option value="switch">Switch Hikvision</option>
-                    <option value="nvr">NVR Hikvision</option>
+                    <option value="switch">Switch</option>
+                    <option value="nvr">NVR</option>
                     <option value="bullet">Caméra Bullet</option>
                     <option value="dome">Caméra Dôme</option>
                     <option value="box">Box / Internet</option>
                     <option value="ecran">Écran (PC)</option>
-                    <option value="radio">Antenne Radio</option>
+                    <option value="radio">Ponts Radios</option>
                     <option value="ampli">Ampli Audio</option>
                     <option value="hp">Haut-Parleur (HP)</option>
                     <option value="pupitre">Pupitre Micro</option>
@@ -445,7 +445,7 @@
             },
             switch: {
                 names: ['SWITCH1', 'SWITCH2', 'SWITCH3', 'SWITCH4', 'SWITCH5', 'SWITCH6', 'SWITCH7', 'SWITCH8', 'SWITCH9', 'SWITCH10'],
-                ips: ['172.16.0.201', '172.16.0.202', '172.16.0.203', '172.16.0.204', '172.16.0.205', '172.16.0.206', '172.16.0.207', '172.16.0.208', '172.16.0.209', '172.16.0.210']
+                ips: ['172.16.0.200', '172.16.0.201', '172.16.0.202', '172.16.0.203', '172.16.0.204', '172.16.0.205', '172.16.0.206', '172.16.0.207', '172.16.0.208', '172.16.0.209']
             },
             nvr: {
                 names: ['NVR1', 'NVR2', 'NVR3'],
@@ -551,7 +551,7 @@
 
         /* MODIFIÉ : Position routeur x: 100 au lieu de 5000 */
         let equipments = [
-            { id: 'root', type: 'routeur', deviceName: 'Routeur Principal', ip: '192.168.1.1', loc: 'Entrée', x: 100, y: 100, parent: null }
+            { id: 'root', type: 'routeur', deviceName: 'Routeur Principal', ip: '172.16.0.254', loc: 'Baie de Brassage', x: 100, y: 100, parent: null }
         ];
 
         function getIcon(type) {
