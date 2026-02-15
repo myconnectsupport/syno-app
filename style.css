@@ -1346,3 +1346,97 @@ body.dark-mode .floating-toolbar button {
 #workspace-wrapper.is-panning {
     cursor: grabbing; /* Affiche la main fermée (agrippe) */
 }
+
+/* --- STYLE DE LA FENÊTRE D'AIDE --- */
+.help-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.6); /* Fond noir transparent */
+    z-index: 9999; /* Au-dessus de tout */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(3px); /* Petit effet de flou moderne */
+}
+
+.help-content {
+    background: white;
+    width: 90%;
+    max-width: 600px;
+    max-height: 85vh; /* Pour ne pas dépasser l'écran */
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    font-family: sans-serif;
+    animation: fadeIn 0.2s ease-out;
+}
+
+/* Animation d'ouverture */
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.help-header {
+    padding: 15px 20px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.help-header h2 { margin: 0; font-size: 18px; color: #333; }
+.close-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: #666; }
+
+.help-body {
+    padding: 20px;
+    overflow-y: auto; /* Scroll si trop long */
+    line-height: 1.6;
+}
+
+.help-body h3 { margin-top: 0; color: #007bff; border-bottom: 2px solid #007bff; display: inline-block; margin-bottom: 10px; }
+
+.help-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Deux colonnes */
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.help-item { font-size: 13px; color: #444; }
+
+/* Table des raccourcis */
+.shortcuts-table { width: 100%; border-collapse: collapse; }
+.shortcuts-table td { padding: 8px 0; border-bottom: 1px solid #eee; font-size: 13px; }
+.shortcuts-table tr:last-child td { border-bottom: none; }
+
+/* Style des touches clavier */
+.key {
+    background: #eee;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-family: monospace;
+    font-weight: bold;
+    font-size: 11px;
+    color: #333;
+    box-shadow: 0 2px 0 #ccc;
+}
+
+.help-footer {
+    padding: 15px;
+    border-top: 1px solid #ddd;
+    text-align: center;
+    background: #fff;
+}
+
+/* --- ADAPTATION MODE SOMBRE --- */
+body.dark-mode .help-content { background: #2c2c2c; color: #eee; }
+body.dark-mode .help-header { background: #1f1f1f; border-bottom-color: #444; }
+body.dark-mode .help-header h2 { color: #fff; }
+body.dark-mode .close-btn { color: #fff; }
+body.dark-mode .help-item { color: #ccc; }
+body.dark-mode .shortcuts-table td { border-bottom-color: #444; }
+body.dark-mode .key { background: #444; border-color: #666; color: #fff; box-shadow: 0 2px 0 #222; }
+body.dark-mode .help-footer { background: #2c2c2c; border-top-color: #444; }
