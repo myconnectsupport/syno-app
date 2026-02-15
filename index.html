@@ -1,349 +1,227 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
     <title>Synoptique Technicien</title>
+    <link rel="icon" href="assets/myco.png" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    
-    <style>
-        :root {
-            --primary: #007AFF;
-            --danger: #FF3B30;
-            --bg: #F2F2F7;
-            --card: #FFFFFF;
-            --border: #C6C6C8;
-            --success: #34C759;
-            --warning: #FF9500;
-        }
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            margin: 0; padding: 0;
-            background-color: var(--bg);
-            height: 100vh;
-            width: 100%;
-            display: flex; flex-direction: column;
-            overflow: hidden;
-            transition: background-color 0.3s;
-        }
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- Tailwind CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
 
-        /* --- SÉCURITÉ --- */
-        #auth-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #1d1d1f; display: flex; flex-direction: column;
-            justify-content: center; align-items: center;
-            z-index: 10000; color: white; transition: opacity 0.3s;
-        }
-        .auth-box { background: #2c2c2e; padding: 25px; border-radius: 16px; text-align: center; width: 80%; max-width: 300px; }
-        .auth-input { width: 100%; padding: 12px; margin: 15px 0; border-radius: 8px; border: 1px solid #444; background: #1c1c1e; color: white; font-size: 1.2rem; text-align: center; box-sizing: border-box; }
+<link rel="stylesheet" href="style.css" />
 
-        /* --- HEADER --- */
-        .header {
-            background-color: var(--card);
-            padding: 12px 20px;
-            display: flex; align-items: center; gap: 15px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            z-index: 50; flex-shrink: 0;
-            transition: background-color 0.3s;
-        }
+<div id="auth-overlay" class="fixed inset-0 flex items-center justify-center overflow-hidden z-[9999]">
 
-        /* Dark Mode Toggle */
-        .dark-mode-toggle { display: flex; align-items: center; gap: 8px; }
-        .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .3s; border-radius: 24px; }
-        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--primary); }
-        input:checked + .slider:before { transform: translateX(26px); }
-        .dark-mode-label { font-size: 18px; }
+  <!-- GRADIENT FOND -->
+  <div class="absolute inset-0 animated-gradient"></div>
 
-        /* Save Status */
-        .save-status {
-            display: flex; align-items: center; gap: 6px; padding: 6px 12px;
-            background: #f0f0f0; border-radius: 20px; font-size: 13px; font-weight: 500; min-width: 110px;
-            transition: all 0.3s;
-        }
-        .save-status.saved { background: #e8f5e9; color: #2e7d32; }
-        .save-status.unsaved { background: #fff3e0; color: #f57c00; animation: pulse 2s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
-        .status-dot { font-size: 12px; }
+  <!-- LOGO AU-DESSUS DU GRADIENT -->
+  <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+    <img src="assets/myco2.png"
+         class="w-[1050px] max-w-[80%] opacity-10 select-none" />
+  </div>
 
-        /* Header Actions */
-        .header-actions { display: flex; gap: 8px; flex: 0 0 auto; }
+  <!-- CONTENU -->
+  <div class="relative z-20 text-center text-white px-6">
 
-        .header-btn-labeled {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            gap: 2px; padding: 8px 12px; border: none; border-radius: 8px;
-            background: white; cursor: pointer; transition: all 0.2s; min-width: 70px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        .header-btn-labeled:hover { transform: translateY(-2px); box-shadow: 0 3px 8px rgba(0,0,0,0.15); }
-        .header-btn-labeled:active { transform: translateY(0); }
-        .header-btn-labeled.disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
-        
-        .btn-icon { font-size: 20px; }
-        .btn-label { font-size: 11px; font-weight: 600; color: #333; }
+    <h1 class="text-5xl md:text-6xl font-light tracking-[0.4em] mb-[280px] animate-title">
+      MYSYNO
+    </h1>
 
-        .save-btn { border: 2px solid var(--success); }
-        .save-btn:hover { background: #f0fdf4; }
-        .open-btn { border: 2px solid var(--primary); }
-        .open-btn:hover { background: #eff6ff; }
-        .export-btn { border: 2px solid var(--warning); }
-        .export-btn:hover { background: #fff7ed; }
-        .add-btn { border: 2px solid var(--primary); }
-        .add-btn:hover { background: #eff6ff; }
+    <div class="flex flex-col gap-6 w-72 mx-auto">
 
-        .company-logo {
-            height: 50px; 
-            width: auto;
-            margin-left: 20px;
-            margin-right: auto; 
-            object-fit: contain;
-            transition: transform 0.2s;
-        }
-        .company-logo:hover { transform: scale(1.05); }
+      <input
+        type="password"
+        id="pass-field"
+        maxlength="4"
+        placeholder="Code"
+        autofocus
+        onkeydown="if(event.key === 'Enter') checkPass()"
+        class="w-full py-3 rounded-2xl text-center text-white
+                bg-white/10 backdrop-blur-md
+                outline-none transition duration-300
+                focus:bg-white/20 focus:shadow-[0_0_15px_rgba(255,255,255,0.3)]"
+      />
 
-        .site-name-input {
-            flex: 0 0 auto; width: 250px; padding: 10px 15px;
-            border: 2px solid var(--primary); border-radius: 8px;
-            font-size: 15px; background: white; margin-left: 0;
-        }
+      <button onclick="checkPass()"
+        class="bg-white text-black font-semibold py-3 rounded-2xl 
+               transition duration-300 hover:scale-105 active:scale-95">
+        VALIDER
+      </button>
 
-        /* --- DARK MODE STYLES --- */
-        body.dark-mode { background-color: #1a1a1a; color: #e0e0e0; height: 100vh; }
-        body.dark-mode .header { background-color: #2c2c2c; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
-        body.dark-mode .site-name-input { background: #3a3a3a; color: white; border-color: #555; }
-        body.dark-mode #workspace-container { background-color: #1a1a1a; background-image: radial-gradient(#444 1px, transparent 1px); }
-        body.dark-mode .node { background: #2c2c2c; border-color: #555; color: #e0e0e0; }
-        body.dark-mode .node .device-name { color: #e0e0e0; }
-        body.dark-mode .modal-content { background: #2c2c2c; color: #e0e0e0; }
-        body.dark-mode .form-group input, body.dark-mode .form-group select { background: #3a3a3a; color: white; border-color: #555; }
-        body.dark-mode .header-btn-labeled { background: #3a3a3a; box-shadow: 0 1px 3px rgba(0,0,0,0.5); }
-        body.dark-mode .btn-label { color: #e0e0e0; }
-        body.dark-mode .save-btn:hover { background: #1b3320; }
-        body.dark-mode .open-btn:hover, body.dark-mode .add-btn:hover { background: #1a273b; }
-        body.dark-mode .export-btn:hover { background: #3b2a1a; }
-        body.dark-mode .save-status { background: #333; color: #aaa; }
-        body.dark-mode .save-status.saved { background: #1b3320; color: #4caf50; }
-        body.dark-mode .save-status.unsaved { background: #3b2a1a; color: #ff9800; }
-        body.dark-mode .company-logo { filter: brightness(0.9); }
-        body.dark-mode .zoom-indicator { background: rgba(44, 44, 44, 0.95); color: #e0e0e0; }
-        body.dark-mode .position-indicator { background: rgba(50, 50, 50, 0.9); color: #e0e0e0; }
+      <div id="authLoader"
+        class="hidden w-10 h-10 mx-auto border-4 border-white 
+               border-t-transparent rounded-full animate-spin">
+      </div>
 
-        /* --- WORKSPACE & ZOOM --- */
-        #workspace-wrapper { 
-            flex: 1; 
-            position: relative; 
-            overflow: auto; 
-            -webkit-overflow-scrolling: touch; 
-            z-index: 1; 
-            background-color: var(--bg);
-            transition: background-color 0.3s;
-        }
-        
-        #workspace-container { 
-            position: relative; 
-            width: 10000px; 
-            height: 10000px; 
-            background-image: radial-gradient(#ccc 1px, transparent 1px); 
-            background-size: 30px 30px; 
-            touch-action: none; 
-            transform-origin: 0 0; 
-            transition: transform 0.1s ease-out; 
-        }
-        
-        #connections-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
-
-        /* --- BOITIER EQUIPEMENT --- */
-        .node {
-            position: absolute; background: var(--card); border: 2px solid #ddd; border-radius: 10px;
-            padding: 10px; width: 160px; display: flex; flex-direction: column; align-items: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.08); z-index: 2; user-select: none; 
-            touch-action: none; 
-            height: auto; 
-            min-height: 120px;
-            transition: background-color 0.3s, border-color 0.3s;
-        }
-        .node.selected { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,122,255,0.2); z-index: 10; }
-        .node .icon { margin-bottom: 5px; height: 60px; width: 100%; display: flex; justify-content: center; align-items: center; overflow: hidden; }
-        .node-image { max-width: 90%; max-height: 100%; object-fit: contain; }
-        .node .device-name { font-weight: 700; font-size: 0.9rem; text-align: center; margin-top: 5px; color: #1d1d1f; }
-        .node .ip-addr { font-size: 0.8rem; color: var(--primary); font-family: monospace; font-weight: 600; margin: 2px 0; }
-        .node .loc { font-size: 0.75rem; color: #86868b; text-align: center; font-style: italic; }
-
-        .quick-add-btn {
-            position: absolute; top: -12px; right: -12px;
-            width: 28px; height: 28px;
-            background: #007AFF; color: white;
-            border-radius: 50%; display: none; align-items: center; justify-content: center;
-            font-size: 20px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 101; transition: transform 0.1s;
-        }
-        .quick-add-btn:hover { transform: scale(1.1); }
-        .quick-add-btn:active { transform: scale(0.95); }
-
-        .quick-delete-btn {
-            position: absolute; top: -12px; left: -12px;
-            width: 28px; height: 28px;
-            background: #FF3B30; color: white;
-            border-radius: 50%; display: none; align-items: center; justify-content: center;
-            font-size: 18px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 101; transition: transform 0.1s;
-        }
-        .quick-delete-btn:hover { transform: scale(1.1); background: #E62E25; }
-        .quick-delete-btn:active { transform: scale(0.95); }
-
-        .node.selected .quick-add-btn { display: flex; }
-        .node.selected .quick-delete-btn { display: flex; }
-
-        .photo-section {
-            position: relative; width: 100%; height: 100px; margin-bottom: 8px;
-            border-radius: 8px 8px 4px 4px; overflow: hidden; background-color: #eee; cursor: pointer;
-        }
-
-        .field-photo { width: 100%; height: 100%; object-fit: cover; }
-
-        .photo-badge {
-            position: absolute; top: 5px; right: 5px;
-            background: rgba(0, 0, 0, 0.6); color: white;
-            padding: 3px 6px; border-radius: 4px; font-size: 14px; pointer-events: none;
-        }
-
-        .position-indicator {
-            position: fixed; 
-            bottom: 100px; 
-            left: 10px;
-            background: rgba(0, 0, 0, 0.7); color: white;
-            padding: 8px 12px; border-radius: 6px;
-            font-family: monospace; font-size: 12px;
-            z-index: 300; pointer-events: none;
-        }
-
-        /* --- UI FLOTTANTE --- */
-        .floating-ui { position: fixed; bottom: 30px; display: flex; align-items: center; z-index: 250; }
-        .floating-ui.modal-open { display: none !important; }
-        .trash-zone { left: 20px; flex-direction: column-reverse; gap: 15px; }
-        .zoom-zone { right: 20px; gap: 10px; flex-direction: column; }
-
-        .fab-btn {
-            width: 55px; height: 55px; border-radius: 50%; border: none;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2); font-size: 24px;
-            display: flex; justify-content: center; align-items: center;
-            cursor: pointer; transition: transform 0.1s;
-        }
-        .fab-btn:active { transform: scale(0.95); }
-
-        #photo-btn { background: var(--primary); color: white; display: none; margin-bottom: 5px;}
-        #photo-btn.show { display: flex; animation: popIn 0.2s; }
-
-        .zoom-btn { background: white; color: #333; font-weight: bold; font-size: 28px; }
-
-        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
-
-        /* --- MODALE AJOUT --- */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: flex-end; z-index: 200; }
-        .modal-content { background: white; width: 100%; max-width: 500px; border-radius: 20px 20px 0 0; padding: 20px; padding-bottom: 40px; animation: slideUp 0.3s ease-out; max-height: 85vh; overflow-y: auto; }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-
-        /* MODAL VISUALISATION PHOTO */
-        #photo-modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center;
-            z-index: 300; flex-direction: column;
-        }
-        #full-photo { max-width: 95%; max-height: 80vh; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        .photo-controls { margin-top: 20px; display: flex; gap: 20px; }
-        .icon-btn { background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 24px; cursor: pointer; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(5px);}
-
-        .form-group { margin-bottom: 12px; }
-        .form-group label { display: block; margin-bottom: 4px; font-weight: 600; font-size: 0.9rem; }
-        .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 1rem; box-sizing: border-box; background: #FAFAFA; }
-        .btn-full { width: 100%; padding: 14px; border-radius: 12px; border: none; font-size: 1rem; font-weight: bold; margin-top: 10px; cursor: pointer; }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-cancel { background: #E5E5EA; color: black; margin-top: 5px;}
-        .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 10px 20px; border-radius: 20px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 300; }
-
-        .zoom-indicator {
-            position: fixed;
-            bottom: 240px; 
-            right: 20px;
-            background: rgba(255, 255, 255, 0.95);
-            color: #333;
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: bold;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            z-index: 250;
-            min-width: 50px;
-            text-align: center;
-        }
-    </style>
-</head>
-<body>
-
-    <div id="auth-overlay">
-        <div class="auth-box">
-            <h3>🔐 Accès Technicien</h3>
-            <input type="tel" id="pass-field" class="auth-input" placeholder="Code" maxlength="4">
-            <button class="btn-full btn-primary" onclick="checkPass()">Valider</button>
-        </div>
     </div>
+  </div>
+</div>
 
-    <input type="file" id="fileLoader" style="display:none" accept=".json" onchange="loadProject(this)">
-    <input type="file" id="photoInput" style="display:none" accept="image/*" onchange="processPhoto(this)">
+
+
+    <input
+      type="file"
+      id="fileLoader"
+      style="display: none"
+      accept=".json"
+      onchange="loadProject(this)"
+    />
+    <input
+      type="file"
+      id="photoInput"
+      style="display: none"
+      accept="image/*"
+      onchange="processPhoto(this)"
+    />
 
     <div class="header">
-        <div class="dark-mode-toggle">
-            <label class="switch">
-                <input type="checkbox" id="darkModeSwitch" onchange="toggleDarkMode()">
-                <span class="slider"></span>
-            </label>
-            <span class="dark-mode-label">🌙</span>
-        </div>
+      <div class="dark-mode-toggle">
+        <label class="switch">
+          <input
+            type="checkbox"
+            id="darkModeSwitch"
+            onchange="toggleDarkMode()"
+          />
+          <span class="slider"></span>
+        </label>
+        <span class="dark-mode-label">🌙</span>
+      </div>
 
-        <div class="save-status saved" id="saveStatus">
-            <span class="status-dot">🟢</span>
-            <span class="status-text">Sauvegardé</span>
-        </div>
+      <div class="save-status saved" id="saveStatus">
+        <span class="status-dot">🟢</span>
+        <span class="status-text">Sauvegardé</span>
+      </div>
 
-        <div class="header-actions">
-            <button class="header-btn-labeled save-btn" onclick="saveProject()" title="Sauvegarder">
-                <span class="btn-icon">💾</span>
-                <span class="btn-label">Sauver</span>
-            </button>
-            
-            <button class="header-btn-labeled open-btn" onclick="triggerLoad()" title="Ouvrir">
-                <span class="btn-icon">📂</span>
-                <span class="btn-label">Ouvrir</span>
-            </button>
-            
-            <button class="header-btn-labeled export-btn disabled" id="btnDownload" onclick="downloadPDF()" title="Exporter en PDF">
-                <span class="btn-icon">⬇</span>
-                <span class="btn-label">Export PDF</span>
-            </button>
-            
-            <button class="header-btn-labeled add-btn" onclick="openAddModal()" title="Ajouter équipement">
-                <span class="btn-icon">+</span>
-                <span class="btn-label">Ajouter</span>
-            </button>
-        </div>
+      <input
+        type="text"
+        id="siteName"
+        class="site-name-input"
+        placeholder="?-- Nom du site --?"
+        oninput="checkInput()"
+      />
 
-        <img src="myco.png" alt="MyConnect" class="company-logo">
+      <div class="header-actions">
+        <button
+          class="header-btn-labeled save-btn"
+          onclick="saveProject()"
+          title="Sauvegarder"
+        >
+          <span class="btn-icon">💾</span>
+          <span class="btn-label">Sauver</span>
+        </button>
 
-        <input type="text" id="siteName" class="site-name-input" placeholder="Nom du site *" oninput="checkInput()">
+        <button 
+          class="header-btn-labeled bouton-poubelle" 
+          style="margin-left: auto;" 
+          onclick="if(confirm('Tout effacer...')) clearBrowserSave()" 
+         title="Nouveau Projet"
+          >
+          <span class="btn-icon">🗑️</span>
+          <span class="btn-label">Nouveau</span>
+        </button>
+
+        <button
+          class="header-btn-labeled open-btn"
+          onclick="triggerLoad()"
+          title="Ouvrir"
+        >
+          <span class="btn-icon">📂</span>
+          <span class="btn-label">Ouvrir</span>
+        </button>
+
+        <button
+          class="header-btn-labeled add-btn"
+          onclick="openAddModal()"
+          title="Ajouter équipement"
+        >
+          <span class="btn-icon">+</span>
+          <span class="btn-label">Ajouter</span>
+        </button>
+
+        <button
+          class="header-btn-labeled del-zone-btn"
+          id="delZoneBtn"
+          onclick="toggleSelectionMode()"
+          title="Supprimer une zone"
+        >
+          <span class="btn-icon">⛝</span>
+          <span class="btn-label">Zone Suppr.</span>
+        </button>
+
+        <button
+          class="header-btn-labeled multi-select-btn"
+          id="multiSelectBtn"
+          onclick="toggleMultiSelectMode()"
+          title="Sélectionner plusieurs équipements"
+        >
+          <span class="btn-icon">⬚</span>
+          <span class="btn-label">Zone Sélect.</span>
+        </button>
+
+        <button
+          class="header-btn-labeled pen-btn"
+          id="penBtn"
+          onclick="togglePenMode()"
+          title="Reconnecter des équipements"
+        >
+          <span class="btn-icon">✏️</span>
+          <span class="btn-label">Liens</span>
+        </button>
+
+        <button class="header-btn-labeled" id="btnUndo" onclick="undo()" title="Annuler (Ctrl+Z)" disabled style="opacity:0.5;">
+            <span class="btn-icon">↩️</span>
+            <span class="btn-label">Annuler</span>
+        </button>
+
+        <button class="header-btn-labeled" id="btnRedo" onclick="redo()" title="Rétablir (Ctrl+Y)" disabled style="opacity:0.5;">
+            <span class="btn-icon">↪️</span>
+            <span class="btn-label">Rétablir</span>
+        </button>
+
+        <button class="header-btn-labeled excel-btn" onclick="exportToExcel()" title="Exporter inventaire (.xlsx)">
+            <span class="btn-icon">📊</span>
+            <span class="btn-label">Export Excel</span>
+        </button>
+
+        <button
+          class="header-btn-labeled export-btn disabled"
+          id="btnDownload"
+          onclick="downloadPDF()"
+          title="Exporter en PDF"
+        >
+          <span class="btn-icon">⬇</span>
+          <span class="btn-label">Export PDF</span>
+        </button>
+      </div>    
     </div>
 
     <div class="floating-ui trash-zone">
-        <button class="fab-btn" id="photo-btn" onclick="triggerPhotoUpload()">📷</button>
+      <button class="fab-btn" id="photo-btn" onclick="triggerPhotoUpload()">
+        📷
+      </button>
     </div>
 
     <div class="floating-ui zoom-zone">
-        <button class="fab-btn zoom-btn" onclick="updateZoom(0.1)">+</button>
-        <button class="fab-btn zoom-btn" style="font-size:20px;" onclick="resetZoom()">⌂</button>
-        <button class="fab-btn zoom-btn" onclick="updateZoom(-0.1)">-</button>
+      <button class="fab-btn zoom-btn" onclick="updateZoom(0.1)">+</button>
+      <button
+        class="fab-btn zoom-btn"
+        style="font-size: 20px"
+        onclick="resetZoom()"
+      >
+        ⌂
+      </button>
+      <button class="fab-btn zoom-btn" onclick="updateZoom(-0.1)">-</button>
     </div>
 
     <div class="zoom-indicator" id="zoomIndicator">100%</div>
@@ -351,1093 +229,291 @@
     <div class="position-indicator" id="positionIndicator">X: 0 | Y: 0</div>
 
     <div id="workspace-wrapper">
-        <div id="workspace-container" onclick="deselectAll(event)">
-            <svg id="connections-layer"></svg>
-        </div>
+      <div id="workspace-container" onmousedown="handleWorkspaceMouseDown(event)">
+        <svg id="connections-layer"></svg>
+        <div id="selectionBox"></div>
+      </div>
     </div>
 
     <div class="modal-overlay" id="addModal">
-        <div class="modal-content">
-            <h3 id="modalTitle">Nouvel Équipement</h3>
-            <div class="form-group">
-                <label>Type d'appareil</label>
-                <select id="newType" onchange="updateFormFields(this.value)">
-                    <option value="routeur">Routeur Mikrotik</option>
-                    <option value="switch">Switch</option>
-                    <option value="nvr">NVR</option>
-                    <option value="bullet">Caméra Bullet</option>
-                    <option value="dome">Caméra Dôme</option>
-                    <option value="box">Box / Internet</option>
-                    <option value="ecran">Écran (PC)</option>
-                    <option value="radio">Ponts Radios</option>
-                    <option value="ampli">Ampli Audio</option>
-                    <option value="hp">Haut-Parleur (HP)</option>
-                    <option value="pupitre">Pupitre Micro</option>
-                </select>
-            </div>
-
-            <div class="form-group" id="radioModeGroup" style="display:none;">
-                <label>Mode</label>
-                <select id="radioMode">
-                    <option value="couple">Couple PE/PR (automatique)</option>
-                    <option value="pe">Point Émetteur (PE) seul</option>
-                    <option value="pr">Point Récepteur (PR) seul</option>
-                </select>
-            </div>
-            
-            <div class="form-group">
-                <label>Nom / Réf</label>
-                <div id="nameFieldContainer">
-                    <input type="text" id="newDeviceName" placeholder="Ex: Switch-RDC">
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label>Adresse IP</label>
-                <div id="ipFieldContainer">
-                    <input type="text" id="newIP" placeholder="Ex: 192.168.1.10">
-                </div>
-            </div>
-
-            <div class="form-group" id="locationGroup">
-                <label id="locationLabel">Localisation</label>
-                <input type="text" id="newLocation" placeholder="Ex: Baie de brassage">
-            </div>
-
-            <div class="form-group" id="locationPRGroup" style="display:none;">
-                <label>Localisation PR</label>
-                <input type="text" id="newLocationPR" placeholder="Ex: Toit bâtiment B">
-            </div>
-
-            <div class="form-group"><label>Connecté à</label><select id="newParent"><option value="">-- Racine --</option></select></div>
-            <button id="modalActionBtn" class="btn-full btn-primary" onclick="addEquipment()">Ajouter</button>
-            <button class="btn-full btn-cancel" onclick="closeAddModal()">Annuler</button>
+      <div class="modal-content">
+        <h3 id="modalTitle">Nouvel Équipement</h3>
+        <div class="form-group">
+          <label>Type d'appareil</label>
+          <select id="newType" onchange="updateFormFields(this.value)">
+            <option value="routeur">Routeur Mikrotik 📶</option>
+            <option value="switch">Switch 🔌</option>
+            <option value="nvr">NVR 📼</option>
+            <option value="bullet">Caméra Bullet 📹</option>
+            <option value="dome">Caméra Dôme 🎥</option>
+            <option value="box">Box / Internet 🌐</option>
+            <option value="ecran">Écran (PC) 🖥️</option>
+            <option value="radio">Ponts Radios 📡</option>
+            <option value="ampli">Ampli Audio 📢</option>
+            <option value="pupitre">Pupitre Micro 🎤</option>
+          </select>
         </div>
+
+        <div class="form-group" id="radioModeGroup" style="display: none">
+          <label>Mode</label>
+          <select id="radioMode">
+            <option value="couple">Couple PE/PR (automatique)</option>
+            <option value="pe">Point Émetteur (PE) seul</option>
+            <option value="pr">Point Récepteur (PR) seul</option>
+          </select>
+        </div>
+
+        <div
+          class="form-group"
+          id="radioCoupleQuantityGroup"
+          style="display: none"
+        >
+          <label>Nombre de couples à créer</label>
+          <select id="radioCoupleQuantity">
+            <option value="1">1 couple (Standard)</option>
+            <option value="2">2 couples</option>
+            <option value="3">3 couples</option>
+            <option value="4">4 couples</option>
+            <option value="5">5 couples</option>
+            <option value="10">10 couples</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="quantityGroup" style="display: none">
+          <label>Quantité à ajouter</label>
+          <select id="newQuantity">
+            <option value="1">1 (Standard)</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="hpGroup" style="display: none">
+          <label>🔊 Haut-Parleurs (HP) connectés</label>
+
+          <div style="margin-bottom: 10px">
+            <label style="font-size: 0.85rem; color: #666"
+              >Nombre de HP (1 à 4)</label
+            >
+            <select
+              id="hpCount"
+              onchange="updateHPFields()"
+              style="
+                width: 100%;
+                padding: 10px;
+                border: 2px solid #007aff;
+                border-radius: 8px;
+                font-size: 1rem;
+                background: #eff6ff;
+                font-weight: bold;
+              "
+            >
+              <option value="1">1 HP</option>
+              <option value="2">2 HP</option>
+              <option value="3">3 HP</option>
+              <option value="4">4 HP</option>
+            </select>
+          </div>
+
+          <div
+            style="
+              background: #fff7ed;
+              padding: 10px;
+              border-radius: 6px;
+              margin-bottom: 10px;
+              border-left: 3px solid #f59e0b;
+            "
+          >
+            <small style="color: #92400e; font-size: 0.85rem">
+              ℹ️ Les HP héritent de la localisation de l'ampli (connexion
+              analogique)
+            </small>
+          </div>
+
+          <div id="hpNamesContainer"></div>
+        </div>
+
+        <div class="form-group">
+          <label>Nom / Réf</label>
+          <div id="nameFieldContainer">
+            <input
+              type="text"
+              id="newDeviceName"
+              placeholder="Ex: Switch-RDC"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Adresse IP</label>
+          <div id="ipFieldContainer">
+            <input type="text" id="newIP" placeholder="Ex: 192.168.1.10" />
+          </div>
+        </div>
+
+        <div class="form-group" id="locationPRGroup" style="display: none">
+          <label>Localisation PR</label>
+          <input
+            type="text"
+            id="newLocationPR"
+            placeholder="Ex: Toit bâtiment B"
+          />
+        </div>
+
+        <div class="form-group" id="locationGroup">
+          <label id="locationLabel">Localisation</label>
+          <input
+            type="text"
+            id="newLocation"
+            placeholder="Ex: Baie de brassage"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Connecté à</label
+          ><select id="newParent">
+            <option value="">-- Racine --</option>
+          </select>
+        </div>
+        <button
+          id="modalActionBtn"
+          class="btn-full btn-primary"
+          onclick="addEquipment()"
+        >
+          Ajouter
+        </button>
+        <button class="btn-full btn-cancel" onclick="closeAddModal()">
+          Annuler
+        </button>
+      </div>
     </div>
 
     <div id="photo-modal-overlay">
-        <img id="full-photo" src="" alt="Photo équipement">
-        <div class="photo-controls">
-            <button class="icon-btn" onclick="closePhotoViewer()" style="background:rgba(255,255,255,0.3)">✕</button>
-            <button class="icon-btn" onclick="deleteCurrentPhoto()" style="background:rgba(255,59,48,0.6)">🗑️</button>
-        </div>
+      <img id="full-photo" src="" alt="Photo équipement" />
+      <div class="photo-controls">
+        <button
+          class="icon-btn"
+          onclick="closePhotoViewer()"
+          style="background: rgba(255, 255, 255, 0.3)"
+        >
+          ✕
+        </button>
+        <button
+          class="icon-btn"
+          onclick="deleteCurrentPhoto()"
+          style="background: rgba(255, 59, 48, 0.6)"
+        >
+          🗑️
+        </button>
+      </div>
     </div>
 
     <div class="toast" id="toast"></div>
 
-    <script>
-        let selectedEquipmentId = null;
-        let currentZoom = 1;
-        let editingEquipmentId = null;
-        let suggestedX = null;
-        let suggestedY = null;
-        let lastSaved = null;
-        let hasUnsavedChanges = false;
-
-        const presetsByType = {
-            bullet: {
-                names: ['CAM1', 'CAM2', 'CAM3', 'CAM4', 'CAM5', 'CAM6', 'CAM7', 'CAM8', 'CAM9', 'CAM10'],
-                ips: ['172.16.0.101', '172.16.0.102', '172.16.0.103', '172.16.0.104', '172.16.0.105', '172.16.0.106', '172.16.0.107', '172.16.0.108', '172.16.0.109', '172.16.0.110']
-            },
-            dome: {
-                names: ['CAM1', 'CAM2', 'CAM3', 'CAM4', 'CAM5', 'CAM6', 'CAM7', 'CAM8', 'CAM9', 'CAM10'],
-                ips: ['172.16.0.101', '172.16.0.102', '172.16.0.103', '172.16.0.104', '172.16.0.105', '172.16.0.106', '172.16.0.107', '172.16.0.108', '172.16.0.109', '172.16.0.110']
-            },
-            switch: {
-                names: ['SWITCH1', 'SWITCH2', 'SWITCH3', 'SWITCH4', 'SWITCH5', 'SWITCH6', 'SWITCH7', 'SWITCH8', 'SWITCH9', 'SWITCH10'],
-                ips: ['172.16.0.200', '172.16.0.201', '172.16.0.202', '172.16.0.203', '172.16.0.204', '172.16.0.205', '172.16.0.206', '172.16.0.207', '172.16.0.208', '172.16.0.209']
-            },
-            nvr: {
-                names: ['NVR1', 'NVR2', 'NVR3'],
-                ips: ['172.16.0.1', '172.16.0.2', '172.16.0.3']
-            },
-            ampli: {
-                names: ['AMPLI1', 'AMPLI2', 'AMPLI3', 'AMPLI4', 'AMPLI5'],
-                ips: ['172.16.0.51', '172.16.0.52', '172.16.0.53', '172.16.0.54', '172.16.0.55']
-            },
-            routeur: {
-                names: ['ROUTEUR1', 'ROUTEUR2'],
-                ips: ['172.16.0.254', '172.16.0.253']
-            }
-        };
-
-        const radioData = {
-            pe: { names: [], ips: [] },
-            pr: { names: [], ips: [] },
-            couples: []
-        };
-
-        for (let i = 1; i <= 19; i++) {
-            const peName = `PE${i}`;
-            const prName = `PR${i}`;
-            let peIpSuffix = (i <= 9) ? (10 + i) : (20 + i); 
-            let prIpSuffix = (i <= 9) ? (20 + i) : (30 + i);
-            let peIp = `172.16.0.${peIpSuffix}`;
-            let prIp = `172.16.0.${prIpSuffix}`;
-            radioData.pe.names.push(peName);
-            radioData.pe.ips.push(peIp);
-            radioData.pr.names.push(prName);
-            radioData.pr.ips.push(prIp);
-            radioData.couples.push({
-                label: `${peName} + ${prName}`,
-                peName: peName,
-                prName: prName,
-                peIp: peIp,
-                prIp: prIp
-            });
-        }
-
-        function toggleDarkMode() {
-            const isDark = document.getElementById('darkModeSwitch').checked;
-            
-            if (isDark) {
-                document.body.classList.add('dark-mode');
-                document.querySelector('.dark-mode-label').textContent = '☀️';
-                localStorage.setItem('darkMode', 'enabled');
-            } else {
-                document.body.classList.remove('dark-mode');
-                document.querySelector('.dark-mode-label').textContent = '🌙';
-                localStorage.setItem('darkMode', 'disabled');
-            }
-        }
-
-        window.addEventListener('load', function() {
-            const darkMode = localStorage.getItem('darkMode');
-            if (darkMode === 'enabled') {
-                document.getElementById('darkModeSwitch').checked = true;
-                toggleDarkMode();
-            }
-            render(); 
-            updateZoomDisplay(); 
-            
-            /* MODIFIÉ : Scroll forcé vers (0, 0) au démarrage */
-            setTimeout(function() {
-                const wrapper = document.getElementById('workspace-wrapper');
-                wrapper.scrollLeft = 0;
-                wrapper.scrollTop = 0;
-            }, 100);
-        });
-
-        document.getElementById('workspace-wrapper').addEventListener('scroll', function() {
-            const x = Math.round(this.scrollLeft);
-            const y = Math.round(this.scrollTop);
-            document.getElementById('positionIndicator').textContent = `X: ${x} | Y: ${y}`;
-        });
-
-        function updateSaveStatus(saved) {
-            const statusEl = document.getElementById('saveStatus');
-            
-            if (saved) {
-                statusEl.className = 'save-status saved';
-                statusEl.innerHTML = '<span class="status-dot">🟢</span><span class="status-text">Sauvegardé</span>';
-                hasUnsavedChanges = false;
-                lastSaved = new Date();
-            } else {
-                statusEl.className = 'save-status unsaved';
-                statusEl.innerHTML = '<span class="status-dot">🟡</span><span class="status-text">Non sauvegardé</span>';
-                hasUnsavedChanges = true;
-            }
-        }
-
-        function markAsUnsaved() {
-            updateSaveStatus(false);
-        }
-
-        function checkPass() {
-            if(document.getElementById('pass-field').value === "1234") {
-                document.getElementById('auth-overlay').style.display = 'none';
-            } else { alert("Code incorrect"); }
-        }
-
-        /* MODIFIÉ : Position routeur x: 100 au lieu de 5000 */
-        let equipments = [
-            { id: 'root', type: 'routeur', deviceName: 'Routeur Principal', ip: '172.16.0.254', loc: 'Baie de Brassage', x: 100, y: 100, parent: null }
-        ];
-
-        function getIcon(type) {
-            const imageMap = {
-                'routeur': 'routeur.jpg',
-                'switch': 'com1.jpg',
-                'nvr': 'nvr.jpg',
-                'bullet': 'cam1.jpg',
-                'dome': 'cam2.jpg',
-                'box': 'internet.jpg',
-                'ecran': 'pc.jpg',
-                'radio': 'radio.jpg',
-                'ampli': 'ampli.jpg',
-                'hp': 'hp.jpg',
-                'pupitre': 'pupitre.jpg'
-            };
-            return `<img src="${imageMap[type] || 'routeur.jpg'}" class="node-image">`;
-        }
-
-        /* CORRIGÉ : Export PDF avec images */
-        function downloadPDF() {
-            if (!document.getElementById('siteName').value) {
-                alert("Veuillez saisir un nom de site avant d'exporter");
-                return;
-            }
-            
-            const name = document.getElementById('siteName').value;
-            deselectAll();
-            
-            const oldZoom = currentZoom;
-            const container = document.getElementById('workspace-container');
-            
-            container.style.transform = 'scale(1)';
-            showToast("Génération du PDF en cours...");
-            
-            const options = {
-                scale: 2,
-                useCORS: true,
-                allowTaint: true,
-                backgroundColor: '#F2F2F7',
-                logging: false,
-                width: container.scrollWidth,
-                height: container.scrollHeight,
-                windowWidth: container.scrollWidth,
-                windowHeight: container.scrollHeight
-            };
-            
-            setTimeout(() => {
-                html2canvas(container, options).then(canvas => {
-                    try {
-                        const imgWidth = canvas.width;
-                        const imgHeight = canvas.height;
-                        
-                        const pdf = new jspdf.jsPDF({
-                            orientation: imgWidth > imgHeight ? 'landscape' : 'portrait',
-                            unit: 'px',
-                            format: [imgWidth, imgHeight]
-                        });
-                        
-                        const imgData = canvas.toDataURL('image/jpeg', 0.95);
-                        pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
-                        pdf.save(`Synoptique_${name}.pdf`);
-                        showToast("✅ PDF généré avec succès !");
-                        
-                    } catch (error) {
-                        console.error('Erreur génération PDF:', error);
-                        alert("Erreur lors de la génération du PDF");
-                    } finally {
-                        container.style.transform = `scale(${oldZoom})`;
-                    }
-                }).catch(error => {
-                    console.error('Erreur html2canvas:', error);
-                    alert("Erreur lors de la capture du synoptique");
-                    container.style.transform = `scale(${oldZoom})`;
-                });
-            }, 500);
-        }
-
-        function saveProject() {
-            const name = document.getElementById('siteName').value || "Synoptique_SansNom";
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(equipments));
-            const downloadAnchorNode = document.createElement('a');
-            downloadAnchorNode.setAttribute("href", dataStr);
-            downloadAnchorNode.setAttribute("download", name + ".json");
-            document.body.appendChild(downloadAnchorNode);
-            downloadAnchorNode.click();
-            downloadAnchorNode.remove();
-            
-            updateSaveStatus(true); 
-            showToast("💾 Projet sauvegardé !");
-        }
-
-        function triggerLoad() { document.getElementById('fileLoader').click(); }
-
-        function loadProject(input) {
-            const file = input.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const loadedData = JSON.parse(e.target.result);
-                    if(Array.isArray(loadedData)) {
-                        equipments = loadedData;
-                        render();
-                        let fileName = file.name.replace('.json', '');
-                        if(fileName.includes('Synoptique_')) fileName = fileName.replace('Synoptique_', '');
-                        if(fileName !== 'SansNom') document.getElementById('siteName').value = fileName;
-                        
-                        updateSaveStatus(true); 
-                        showToast("Projet chargé avec succès ! 📂");
-                    } else { alert("Format de fichier invalide."); }
-                } catch(err) { alert("Erreur lors de la lecture du fichier."); }
-            };
-            reader.readAsText(file);
-            input.value = ''; 
-        }
-
-        function showToast(msg) {
-            const t = document.getElementById('toast');
-            t.innerText = msg;
-            t.style.opacity = 1;
-            setTimeout(() => t.style.opacity = 0, 3000);
-        }
-
-        function updateFormFields(type, currentName = '', currentIP = '') {
-            const radioModeGroup = document.getElementById('radioModeGroup');
-            document.getElementById('locationLabel').innerText = "Localisation";
-            document.getElementById('locationPRGroup').style.display = 'none';
-
-            if (type === 'radio') {
-                radioModeGroup.style.display = 'block';
-                updateRadioFields(currentName, currentIP);
-                return;
-            } else {
-                radioModeGroup.style.display = 'none';
-            }
-
-            const presets = presetsByType[type];
-            if (presets) {
-                const nameIndex = presets.names.indexOf(currentName);
-                const isManual = (currentName && nameIndex === -1);
-                if (isManual) renderInputs(currentName, currentIP);
-                else renderSelects(type, currentName, currentIP);
-            } else {
-                renderInputs(currentName, currentIP);
-            }
-        }
-
-        function updateRadioFields(currentName = '', currentIP = '') {
-            const mode = document.getElementById('radioMode').value;
-            const nameContainer = document.getElementById('nameFieldContainer');
-            const ipContainer = document.getElementById('ipFieldContainer');
-
-            if (mode === 'couple') {
-                document.getElementById('locationLabel').innerText = "Localisation PE";
-                document.getElementById('locationPRGroup').style.display = 'block';
-                document.getElementById('newLocation').placeholder = "Ex: Baie de brassage";
-
-                let html = `<select id="newDeviceName">`;
-                html += `<option value="">-- Choisir Couple --</option>`;
-                radioData.couples.forEach((couple, index) => {
-                    html += `<option value="${index}" data-type="couple">${couple.label}</option>`;
-                });
-                html += `<option value="__manual__">Saisie manuelle</option></select>`;
-                nameContainer.innerHTML = html;
-                ipContainer.innerHTML = `<input type="text" id="newIP" value="Automatique (2 IPs)" disabled style="background:#eee; color:#666;">`;
-            } 
-            else if (mode === 'pe') {
-                document.getElementById('locationLabel').innerText = "Localisation";
-                document.getElementById('locationPRGroup').style.display = 'none';
-                renderRadioSelects(radioData.pe, currentName, currentIP);
-            } 
-            else if (mode === 'pr') {
-                document.getElementById('locationLabel').innerText = "Localisation";
-                document.getElementById('locationPRGroup').style.display = 'none';
-                renderRadioSelects(radioData.pr, currentName, currentIP);
-            }
-        }
-
-        document.getElementById('radioMode').addEventListener('change', function() {
-            updateRadioFields();
-        });
-
-        function renderRadioSelects(data, nameVal, ipVal) {
-            let nameHtml = `<select id="newDeviceName" onchange="syncRadioIP(this)">`;
-            nameHtml += `<option value="">-- Choisir --</option>`;
-            data.names.forEach((name, index) => {
-                const selected = name === nameVal ? 'selected' : '';
-                nameHtml += `<option value="${name}" data-ip="${data.ips[index]}" ${selected}>${name}</option>`;
-            });
-            nameHtml += `<option value="__manual__">Saisie manuelle...</option></select>`;
-            document.getElementById('nameFieldContainer').innerHTML = nameHtml;
-
-            let ipHtml = `<select id="newIP">`;
-            ipHtml += `<option value="">-- Auto --</option>`;
-            data.ips.forEach((ip) => {
-                const selected = ip === ipVal ? 'selected' : '';
-                ipHtml += `<option value="${ip}" ${selected}>${ip}</option>`;
-            });
-            ipHtml += `<option value="__manual__">Saisie manuelle...</option></select>`;
-            document.getElementById('ipFieldContainer').innerHTML = ipHtml;
-
-            document.getElementById('newIP').addEventListener('change', function() {
-                if (this.value === '__manual__') renderInputs('', '');
-            });
-        }
-
-        function syncRadioIP(select) {
-            const ipSelect = document.getElementById('newIP');
-            if (select.value === '__manual__') {
-                renderInputs('', '');
-            } else {
-                const selectedOption = select.options[select.selectedIndex];
-                const ip = selectedOption.getAttribute('data-ip');
-                if (ip) ipSelect.value = ip;
-            }
-        }
-
-        function renderInputs(nameVal, ipVal) {
-            document.getElementById('nameFieldContainer').innerHTML = 
-                `<input type="text" id="newDeviceName" placeholder="Ex: Switch-RDC" value="${nameVal}">`;
-            document.getElementById('ipFieldContainer').innerHTML = 
-                `<input type="text" id="newIP" placeholder="Ex: 192.168.1.10" value="${ipVal}">`;
-        }
-
-        function renderSelects(type, nameVal, ipVal) {
-            const presets = presetsByType[type];
-            let nameHtml = `<select id="newDeviceName" onchange="syncIPFromSelect('${type}')">`;
-            nameHtml += `<option value="">-- Choisir --</option>`;
-            presets.names.forEach((name, index) => {
-                const selected = name === nameVal ? 'selected' : '';
-                nameHtml += `<option value="${name}" data-index="${index}" ${selected}>${name}</option>`;
-            });
-            nameHtml += `<option value="__manual__">Saisie manuelle...</option></select>`;
-            document.getElementById('nameFieldContainer').innerHTML = nameHtml;
-
-            let ipHtml = `<select id="newIP">`;
-            ipHtml += `<option value="">-- Auto --</option>`;
-            presets.ips.forEach((ip) => {
-                const selected = ip === ipVal ? 'selected' : '';
-                ipHtml += `<option value="${ip}" ${selected}>${ip}</option>`;
-            });
-            ipHtml += `<option value="__manual__">Saisie manuelle...</option></select>`;
-            document.getElementById('ipFieldContainer').innerHTML = ipHtml;
-            
-            document.getElementById('newIP').addEventListener('change', function() {
-                if (this.value === '__manual__') renderInputs('', '');
-            });
-        }
-
-        function syncIPFromSelect(type) {
-            const nameSelect = document.getElementById('newDeviceName');
-            const ipSelect = document.getElementById('newIP');
-            if (nameSelect.value === '__manual__') {
-                renderInputs('', '');
-            } else {
-                const selectedOption = nameSelect.options[nameSelect.selectedIndex];
-                const index = selectedOption.getAttribute('data-index');
-                if (index !== null && presetsByType[type].ips[index]) {
-                    ipSelect.value = presetsByType[type].ips[index];
-                }
-            }
-        }
-
-        function triggerPhotoUpload() { document.getElementById('photoInput').click(); }
-
-        function processPhoto(input) {
-            if (input.files && input.files[0]) {
-                const file = input.files[0];
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = new Image();
-                    img.src = e.target.result;
-                    img.onload = function() {
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        const MAX_WIDTH = 800;
-                        let width = img.width; let height = img.height;
-                        if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
-                        canvas.width = width; canvas.height = height;
-                        ctx.drawImage(img, 0, 0, width, height);
-                        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-                        if (selectedEquipmentId) {
-                            const eq = equipments.find(e => e.id === selectedEquipmentId);
-                            if (eq) { 
-                                eq.photo = dataUrl; 
-                                markAsUnsaved(); 
-                                render(); 
-                                showToast("Photo ajoutée ! 📷"); 
-                            }
-                        }
-                    }
-                }
-                reader.readAsDataURL(file);
-            }
-            input.value = ''; 
-        }
-
-        function openPhotoViewer(photoData) {
-            document.getElementById('full-photo').src = photoData;
-            document.getElementById('photo-modal-overlay').style.display = 'flex';
-        }
-        function closePhotoViewer() { document.getElementById('photo-modal-overlay').style.display = 'none'; }
-
-        function deleteCurrentPhoto() {
-            if (confirm("Supprimer cette photo ?")) {
-                if (selectedEquipmentId) {
-                    const eq = equipments.find(e => e.id === selectedEquipmentId);
-                    if (eq && eq.photo) { 
-                        delete eq.photo; 
-                        markAsUnsaved(); 
-                        render(); 
-                        closePhotoViewer(); 
-                        showToast("Photo supprimée"); 
-                    }
-                }
-            }
-        }
-
-        function updateZoomDisplay() {
-            const zoomPercent = Math.round(currentZoom * 100);
-            document.getElementById('zoomIndicator').textContent = zoomPercent + '%';
-        }
-
-        function updateZoom(delta) {
-            const newZoom = currentZoom + delta;
-            if (newZoom >= 0.1 && newZoom <= 3.0) { 
-                currentZoom = newZoom;
-                document.getElementById('workspace-container').style.transform = `scale(${currentZoom})`;
-                updateZoomDisplay(); 
-            }
-        }
-
-        /* MODIFIÉ : resetZoom scroll vers (0,0) */
-        function resetZoom() {
-            currentZoom = 1;
-            document.getElementById('workspace-container').style.transform = `scale(1)`;
-            document.getElementById('workspace-wrapper').scrollLeft = 0;
-            document.getElementById('workspace-wrapper').scrollTop = 0;
-            updateZoomDisplay(); 
-        }
-
-        /* MODIFIÉ : Lignes avec esquive d'obstacles */
-        function updateConnectionsOnly() {
-            const layer = document.getElementById('connections-layer');
-            layer.innerHTML = ''; 
-            
-            equipments.forEach(eq => {
-                if (eq.parent) {
-                    const parent = equipments.find(e => e.id === eq.parent);
-                    if (parent) {
-                        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                        
-                        // Points de départ et d'arrivée
-                        const startX = parent.x + 80;
-                        const startY = parent.y + 120;
-                        const endX = eq.x + 80;
-                        const endY = eq.y;
-                        
-                        // Vérifier s'il y a des équipements entre le parent et l'enfant
-                        let offsetX = 0;
-                        
-                        // Zone de la ligne horizontale
-                        const lineTop = Math.min(startY, endY);
-                        const lineBottom = Math.max(startY, endY);
-                        const lineLeft = Math.min(startX, endX);
-                        const lineRight = Math.max(startX, endX);
-                        
-                        // Détecter les collisions avec d'autres équipements
-                        equipments.forEach(other => {
-                            // Ne pas vérifier le parent et l'enfant eux-mêmes
-                            if (other.id === eq.id || other.id === parent.id) return;
-                            
-                            // Zone de l'équipement (avec marge)
-                            const eqLeft = other.x - 20;
-                            const eqRight = other.x + 180 + 20;
-                            const eqTop = other.y - 20;
-                            const eqBottom = other.y + 140 + 20;
-                            
-                            // Vérifier si l'équipement est dans la zone de la ligne
-                            const horizontalOverlap = !(eqRight < lineLeft || eqLeft > lineRight);
-                            const verticalOverlap = !(eqBottom < lineTop || eqTop > lineBottom);
-                            
-                            if (horizontalOverlap && verticalOverlap) {
-                                // Il y a collision ! Calculer le décalage nécessaire
-                                if (startX < endX) {
-                                    // Ligne va vers la droite : passer par la gauche de l'obstacle
-                                    offsetX = Math.min(offsetX, eqLeft - 30);
-                                } else {
-                                    // Ligne va vers la gauche : passer par la droite de l'obstacle
-                                    offsetX = Math.max(offsetX, eqRight + 30);
-                                }
-                            }
-                        });
-                        
-                        // Construire le chemin
-                        let pathData;
-                        const midY = (startY + endY) / 2;
-                        
-                        if (offsetX !== 0) {
-                            // Il y a un obstacle : tracer avec contournement
-                            pathData = `M ${startX} ${startY}
-                                         L ${startX} ${midY}
-                                         L ${offsetX} ${midY}
-                                         L ${offsetX} ${midY}
-                                         L ${endX} ${midY}
-                                         L ${endX} ${endY}`;
-                        } else {
-                            // Pas d'obstacle : ligne simple à angle droit
-                            pathData = `M ${startX} ${startY}
-                                         L ${startX} ${midY}
-                                         L ${endX} ${midY}
-                                         L ${endX} ${endY}`;
-                        }
-                        
-                        path.setAttribute("d", pathData); 
-                        path.setAttribute("stroke", "#007AFF"); 
-                        path.setAttribute("stroke-width", "2");
-                        path.setAttribute("stroke-linejoin", "round");
-                        path.setAttribute("stroke-linecap", "round");
-                        path.setAttribute("fill", "none");
-                        layer.appendChild(path);
-                    }
-                }
-
-                if (eq.linkedTo && eq.id < eq.linkedTo) {
-                    const partner = equipments.find(e => e.id === eq.linkedTo);
-                    if (partner) {
-                        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                        const d = `M ${eq.x + 80} ${eq.y + 30} L ${partner.x + 80} ${partner.y + 30}`;
-                        path.setAttribute("d", d);
-                        path.setAttribute("stroke", "black");
-                        path.setAttribute("stroke-width", "2");
-                        path.setAttribute("stroke-dasharray", "5,5"); 
-                        path.setAttribute("fill", "none");
-                        layer.appendChild(path);
-                    }
-                }
-            });
-        }
-
-        function quickAddChild(parentId, e) {
-            e.stopPropagation();
-            openAddModal();
-            document.getElementById('newParent').value = parentId;
-            
-            const parentNode = equipments.find(eq => eq.id === parentId);
-            if(parentNode) {
-                suggestedX = parentNode.x + 50; 
-                suggestedY = parentNode.y + 150; 
-            }
-            showToast("Parent pré-sélectionné");
-        }
-
-        function render() {
-            document.querySelectorAll('.node').forEach(el => el.remove());
-            
-            equipments.forEach(eq => {
-                const div = document.createElement('div');
-                div.className = 'node'; div.id = eq.id;
-                div.style.left = eq.x + 'px'; div.style.top = eq.y + 'px';
-                if(eq.id === selectedEquipmentId) div.classList.add('selected');
-
-                let photoHtml = '';
-                if (eq.photo) {
-                    div.classList.add('node-with-photo');
-                    photoHtml = `<div class="photo-section">
-                                    <img src="${eq.photo}" class="field-photo">
-                                    <div class="photo-badge">📷</div>
-                                 </div>`;
-                }
-
-                div.innerHTML = `
-                    <div class="quick-delete-btn" onclick="deleteThisEquipment('${eq.id}', event)">✕</div>
-                    <div class="quick-add-btn" onclick="quickAddChild('${eq.id}', event)">+</div>
-                    ${photoHtml}
-                    <div class="icon">${getIcon(eq.type)}</div>
-                    <div class="device-name">${eq.deviceName}</div>
-                    <div class="ip-addr">${eq.ip}</div>
-                    <div class="loc">${eq.loc}</div>`;
-                
-                if (eq.photo) {
-                    const photoSec = div.querySelector('.photo-section');
-                    if (photoSec) {
-                        photoSec.addEventListener('dblclick', (e) => {
-                            e.stopPropagation();
-                            selectedEquipmentId = eq.id; 
-                            openPhotoViewer(eq.photo);
-                        });
-                    }
-                }
-
-                div.addEventListener('mousedown', startDrag);
-                div.addEventListener('touchstart', startDrag, {passive: false});
-                
-                div.addEventListener('click', (e) => { 
-                    e.stopPropagation(); deselectAll(); div.classList.add('selected');
-                    selectedEquipmentId = eq.id; updateFloatingButtons();
-                });
-
-                div.addEventListener('dblclick', (e) => {
-                    if (e.target.closest('.photo-section')) return;
-                    e.stopPropagation(); 
-                    openEditModal(eq.id);
-                });
-
-                document.getElementById('workspace-container').appendChild(div);
-            });
-            updateConnectionsOnly();
-        }
-
-        let activeDragId = null; let dragStartX = 0; let dragStartY = 0; let initialObjX = 0; let initialObjY = 0;
-
-        function startDrag(e) {
-            if (e.target.classList.contains('quick-add-btn') || e.target.classList.contains('quick-delete-btn')) return;
-
-            activeDragId = e.currentTarget.id;
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            dragStartX = clientX; dragStartY = clientY;
-            const eq = equipments.find(item => item.id === activeDragId);
-            initialObjX = eq.x; initialObjY = eq.y;
-            document.addEventListener('mousemove', onDrag);
-            document.addEventListener('touchmove', onDrag, {passive: false});
-            document.addEventListener('mouseup', endDrag); document.addEventListener('touchend', endDrag);
-        }
-
-        function onDrag(e) {
-            if (!activeDragId) return;
-            e.preventDefault(); 
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            const deltaX = (clientX - dragStartX) / currentZoom;
-            const deltaY = (clientY - dragStartY) / currentZoom;
-            const newX = initialObjX + deltaX;
-            const newY = initialObjY + deltaY;
-            const eq = equipments.find(item => item.id === activeDragId);
-            eq.x = Math.max(0, newX); eq.y = Math.max(0, newY);
-            const el = document.getElementById(activeDragId);
-            el.style.left = eq.x + 'px'; el.style.top = eq.y + 'px';
-            updateConnectionsOnly();
-        }
-
-        function endDrag() { 
-            activeDragId = null; 
-            markAsUnsaved(); 
-            document.removeEventListener('mousemove', onDrag);
-            document.removeEventListener('touchmove', onDrag);
-            document.removeEventListener('mouseup', endDrag);
-            document.removeEventListener('touchend', endDrag);
-        }
-        
-        function deselectAll(e) { 
-            document.querySelectorAll('.node').forEach(n => n.classList.remove('selected')); 
-            selectedEquipmentId = null; updateFloatingButtons();
-        }
-        
-        function deleteThisEquipment(id, event) {
-            event.stopPropagation(); 
-            
-            if (confirm("Supprimer cet équipement ?")) {
-                const target = equipments.find(e => e.id === id);
-                if (target && target.linkedTo) {
-                    const partner = equipments.find(e => e.id === target.linkedTo);
-                    if (partner) delete partner.linkedTo;
-                }
-
-                equipments = equipments.filter(eq => eq.id !== id);
-                
-                equipments.forEach(e => { 
-                    if (e.parent === id) e.parent = null; 
-                });
-                
-                selectedEquipmentId = null;
-                markAsUnsaved(); 
-                updateFloatingButtons();
-                render();
-                showToast("✅ Équipement supprimé");
-            }
-        }
-
-        function updateFloatingButtons() {
-            const photoBtn = document.getElementById('photo-btn');
-            if (selectedEquipmentId) { 
-                photoBtn.classList.add('show'); 
-            } else { 
-                photoBtn.classList.remove('show'); 
-            }
-        }
-
-        function openAddModal() {
-            document.querySelectorAll('.floating-ui').forEach(el => el.classList.add('modal-open'));
-            const sel = document.getElementById('newParent');
-            sel.innerHTML = '<option value="">-- Racine --</option>';
-            equipments.forEach(eq => sel.innerHTML += `<option value="${eq.id}">${eq.deviceName}</option>`);
-            
-            editingEquipmentId = null;
-            document.getElementById('modalTitle').innerText = "Nouvel Équipement";
-            document.getElementById('modalActionBtn').innerText = "Ajouter";
-            document.getElementById('newType').value = 'switch';
-            document.getElementById('radioMode').value = 'couple'; 
-            
-            updateFormFields('switch'); 
-            
-            document.getElementById('newLocation').value = '';
-            document.getElementById('newLocationPR').value = '';
-            document.getElementById('newParent').value = '';
-            document.getElementById('addModal').style.display = 'flex';
-        }
-
-        function openEditModal(id) {
-            const eq = equipments.find(e => e.id === id);
-            if (!eq) return;
-            document.querySelectorAll('.floating-ui').forEach(el => el.classList.add('modal-open'));
-            
-            const sel = document.getElementById('newParent');
-            sel.innerHTML = '<option value="">-- Racine --</option>';
-            equipments.forEach(e => { if (e.id !== id) sel.innerHTML += `<option value="${e.id}">${e.deviceName}</option>`; });
-
-            editingEquipmentId = id;
-            document.getElementById('modalTitle').innerText = "Modifier l'Équipement";
-            document.getElementById('modalActionBtn').innerText = "Modifier";
-            
-            document.getElementById('newType').value = eq.type;
-            
-            if (eq.type === 'radio') {
-                document.getElementById('radioModeGroup').style.display = 'block';
-                
-                if (eq.linkedTo) {
-                    document.getElementById('radioMode').value = 'couple';
-                    updateRadioFields(eq.deviceName, eq.ip); 
-                    
-                    const partner = equipments.find(e => e.id === eq.linkedTo);
-                    let isPE = eq.deviceName.startsWith('PE') || (eq.id < partner.id);
-                    
-                    if (isPE) {
-                        document.getElementById('newLocation').value = eq.loc;
-                        document.getElementById('newLocationPR').value = partner ? partner.loc : '';
-                    } else {
-                        document.getElementById('newLocation').value = partner ? partner.loc : '';
-                        document.getElementById('newLocationPR').value = eq.loc;
-                    }
-                } else {
-                    document.getElementById('radioMode').value = eq.deviceName.startsWith('PE') ? 'pe' : 'pr';
-                    updateRadioFields(eq.deviceName, eq.ip);
-                    document.getElementById('newLocation').value = eq.loc;
-                }
-            } else {
-                updateFormFields(eq.type, eq.deviceName, eq.ip);
-                document.getElementById('newLocation').value = eq.loc;
-            }
-            
-            document.getElementById('newParent').value = eq.parent || '';
-            document.getElementById('addModal').style.display = 'flex';
-        }
-
-        function closeAddModal() { 
-            document.getElementById('addModal').style.display = 'none'; 
-            document.querySelectorAll('.floating-ui').forEach(el => el.classList.remove('modal-open'));
-            editingEquipmentId = null;
-            suggestedX = null;
-            suggestedY = null;
-        }
-
-        function addEquipment() {
-            const type = document.getElementById('newType').value;
-            const locPE = document.getElementById('newLocation').value || "Lieu PE";
-            const locPR = document.getElementById('newLocationPR').value || "Lieu PR";
-            const parent = document.getElementById('newParent').value || null;
-            
-            const deviceName = document.getElementById('newDeviceName').value || "Appareil";
-            const ip = document.getElementById('newIP').value || "";
-
-            if (editingEquipmentId) {
-                // EDITION
-                const eq = equipments.find(e => e.id === editingEquipmentId);
-                const radioMode = document.getElementById('radioMode').value;
-
-                if (eq) {
-                    if (eq.type === 'radio' && radioMode === 'couple' && eq.linkedTo) {
-                        const partner = equipments.find(e => e.id === eq.linkedTo);
-                        let isPE = eq.deviceName.startsWith('PE') || (eq.id < partner.id);
-                        if (isPE) { 
-                            eq.loc = locPE; 
-                            eq.parent = null; 
-                            if(partner) { partner.loc = locPR; partner.parent = parent; }
-                        } else { 
-                            eq.loc = locPR; 
-                            eq.parent = parent; 
-                            if(partner) { partner.loc = locPE; partner.parent = null; }
-                        }
-                    } else {
-                        eq.type = type; eq.deviceName = deviceName; eq.ip = ip; eq.loc = locPE; eq.parent = parent;
-                    }
-                    showToast("Équipement modifié !");
-                }
-            } else {
-                // AJOUT
-                const radioMode = document.getElementById('radioMode').value;
-                let scrollX = (document.getElementById('workspace-wrapper').scrollLeft + 100) / currentZoom;
-                let scrollY = (document.getElementById('workspace-wrapper').scrollTop + 200) / currentZoom;
-                
-                if (suggestedX !== null && suggestedY !== null) {
-                    scrollX = suggestedX;
-                    scrollY = suggestedY;
-                    suggestedX = null;
-                    suggestedY = null;
-                }
-
-                if (type === 'radio' && radioMode === 'couple') {
-                    const select = document.getElementById('newDeviceName');
-                    const index = select.value;
-                    
-                    if (index === "" || index === "__manual__") {
-                        addSingleNode(type, deviceName, ip, locPE, parent, scrollX, scrollY);
-                    } else {
-                        const coupleData = radioData.couples[index];
-                        const idPE = 'eq-' + Date.now();
-                        const idPR = 'eq-' + (Date.now() + 1);
-
-                        equipments.push({
-                            id: idPE, type: 'radio', deviceName: coupleData.peName, ip: coupleData.peIp,
-                            loc: locPE, 
-                            parent: null,
-                            x: scrollX, y: scrollY,
-                            linkedTo: idPR
-                        });
-
-                        equipments.push({
-                            id: idPR, type: 'radio', deviceName: coupleData.prName, ip: coupleData.prIp,
-                            loc: locPR, parent: parent, x: scrollX + 200, y: scrollY,
-                            linkedTo: idPE
-                        });
-                        showToast("Couple Radio Ajouté ! 📡");
-                    }
-                } else {
-                    addSingleNode(type, deviceName, ip, locPE, parent, scrollX, scrollY);
-                }
-            }
-
-            markAsUnsaved(); 
-            selectedEquipmentId = null;
-            updateFloatingButtons();
-            render(); 
-            closeAddModal();
-        }
-
-        function addSingleNode(type, name, ip, loc, parent, x, y) {
-            equipments.push({
-                id: 'eq-' + Date.now(),
-                type: type,
-                deviceName: name,
-                ip: ip,
-                loc: loc,
-                parent: parent,
-                x: x, y: y
-            });
-            showToast("Équipement ajouté !");
-        }
-
-        function checkInput() { 
-            document.getElementById('btnDownload').classList.toggle('disabled', !document.getElementById('siteName').value);
-            markAsUnsaved(); 
-        }
-
-        function downloadPDF() {
-    if (!document.getElementById('siteName').value) {
-        alert("Veuillez saisir un nom de site avant d'exporter");
-        return;
-    }
-    
-    const name = document.getElementById('siteName').value;
-    deselectAll();
-    
-    // Sauvegarder l'état actuel
-    const oldZoom = currentZoom;
-    const wrapper = document.getElementById('workspace-wrapper');
-    const container = document.getElementById('workspace-container');
-    
-    // Calculer la zone contenant tous les équipements
-    if (equipments.length === 0) {
-        alert("Aucun équipement à exporter");
-        return;
-    }
-    
-    let minX = Infinity, minY = Infinity;
-    let maxX = -Infinity, maxY = -Infinity;
-    
-    equipments.forEach(eq => {
-        minX = Math.min(minX, eq.x);
-        minY = Math.min(minY, eq.y);
-        maxX = Math.max(maxX, eq.x + 200);
-        maxY = Math.max(maxY, eq.y + 200);
-    });
-    
-    // Ajouter des marges
-    const MARGIN = 50;
-    minX = Math.max(0, minX - MARGIN);
-    minY = Math.max(0, minY - MARGIN);
-    maxX = maxX + MARGIN;
-    maxY = maxY + MARGIN;
-    
-    const captureWidth = maxX - minX;
-    const captureHeight = maxY - minY;
-    
-    // Réinitialiser le zoom
-    container.style.transform = 'scale(1)';
-    
-    // Scroller vers la zone à capturer
-    wrapper.scrollLeft = minX;
-    wrapper.scrollTop = minY;
-    
-    showToast("📄 Génération du PDF...");
-    
-    // Attendre que le scroll soit fini
-    setTimeout(() => {
-        // Options de capture optimisées
-        const options = {
-            x: minX,
-            y: minY,
-            width: captureWidth,
-            height: captureHeight,
-            scale: 2,
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: '#F2F2F7',
-            logging: false,
-            scrollX: 0,
-            scrollY: 0,
-            windowWidth: captureWidth,
-            windowHeight: captureHeight
-        };
-        
-        html2canvas(container, options).then(canvas => {
-            try {
-                // Créer le PDF
-                const imgWidth = canvas.width / 2; // Diviser par scale
-                const imgHeight = canvas.height / 2;
-                
-                // Format A4 landscape ou portrait selon l'orientation
-                const orientation = imgWidth > imgHeight ? 'landscape' : 'portrait';
-                const pdf = new jspdf.jsPDF({
-                    orientation: orientation,
-                    unit: 'mm',
-                    format: 'a4'
-                });
-                
-                // Calculer les dimensions pour tenir dans A4
-                const pageWidth = pdf.internal.pageSize.getWidth();
-                const pageHeight = pdf.internal.pageSize.getHeight();
-                
-                const ratio = Math.min(
-                    pageWidth / (imgWidth * 0.264583), // px to mm
-                    pageHeight / (imgHeight * 0.264583)
-                );
-                
-                const pdfWidth = imgWidth * 0.264583 * ratio;
-                const pdfHeight = imgHeight * 0.264583 * ratio;
-                
-                const x = (pageWidth - pdfWidth) / 2;
-                const y = (pageHeight - pdfHeight) / 2;
-                
-                // Ajouter l'image
-                const imgData = canvas.toDataURL('image/jpeg', 0.95);
-                pdf.addImage(imgData, 'JPEG', x, y, pdfWidth, pdfHeight);
-                
-                // Sauvegarder
-                pdf.save(`Synoptique_${name}.pdf`);
-                showToast("✅ PDF généré avec succès !");
-                
-            } catch (error) {
-                console.error('Erreur génération PDF:', error);
-                alert("Erreur lors de la génération du PDF : " + error.message);
-            } finally {
-                // Restaurer l'état
-                container.style.transform = `scale(${oldZoom})`;
-            }
-        }).catch(error => {
-            console.error('Erreur html2canvas:', error);
-            alert("Erreur lors de la capture : " + error.message);
-            container.style.transform = `scale(${oldZoom})`;
-        });
-    }, 300);
-}
-
-        window.onload = render;
-    </script>
-</body>
+    <div
+      id="connectionMenu"
+      style="display: none; position: absolute; z-index: 500"
+    >
+      <div
+        style="
+          background: white;
+          border-radius: 12px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          padding: 8px;
+          min-width: 180px;
+        "
+      >
+        <div
+          class="connection-option"
+          onclick="setConnectionStyle('ethernet')"
+          style="
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+          "
+        >
+          <span style="font-size: 20px">🔵</span>
+          <span style="font-size: 0.9rem; font-weight: 500"
+            >Réseau Ethernet</span
+          >
+        </div>
+
+        <div
+          class="connection-option"
+          onclick="setConnectionStyle('radio')"
+          style="
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+          "
+        >
+          <span style="font-size: 20px">📡</span>
+          <span style="font-size: 0.9rem; font-weight: 500">Liaison Radio</span>
+        </div>
+
+        <div
+          class="connection-option"
+          onclick="setConnectionStyle('fiber')"
+          style="
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+          "
+        >
+          <span style="font-size: 20px">💡</span>
+          <span style="font-size: 0.9rem; font-weight: 500">Fibre Optique</span>
+        </div>
+
+        <hr style="margin: 8px 0; border: none; border-top: 1px solid #eee" />
+
+        <div
+          class="connection-option"
+          onclick="reformatConnection()"
+          style="
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #34C759;
+          "
+        >
+          <span style="font-size: 20px">✨</span>
+          <span style="font-size: 0.9rem; font-weight: 600">Mettre en forme</span>
+        </div>
+
+        <div
+          class="connection-option"
+          onclick="deleteConnection()"
+          style="
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #ff3b30;
+          "
+        >
+          <span style="font-size: 20px">✂️</span>
+          <span style="font-size: 0.9rem; font-weight: 600">Supprimer</span>
+        </div>
+      </div>
+    </div>
+    <script src="script.js"></script>
+  </body>
 </html>
