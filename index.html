@@ -203,6 +203,65 @@
           <span class="btn-icon">⬇</span>
           <span class="btn-label">Export PDF</span>
         </button>
+
+        <button class="header-btn-labeled" onclick="toggleHelp()" title="Aide & Raccourcis">
+    <span style="font-size: 18px; font-weight: bold;">❓</span>
+</button>
+
+<div id="helpModal" class="help-overlay" onclick="closeHelpOnOutsideClick(event)" style="display: none;">
+    <div class="help-content">
+        <div class="help-header">
+            <h2>📘 Guide d'utilisation</h2>
+            <button class="close-btn" onclick="toggleHelp()">✕</button>
+        </div>
+        
+        <div class="help-body">
+            <h3>Barre d'outils</h3>
+            <div class="help-grid">
+                <div class="help-item">💾 <strong>Sauver/Ouvrir :</strong> Enregistre votre projet dans le navigateur ou charge un fichier.</div>
+                <div class="help-item">📄 <strong>Export PDF/Excel :</strong> Génère un rapport (format .xlsx) ou un plan (format .pdf).</div>
+                <div class="help-item">➕ <strong>Ajouter :</strong> Ouvre le menu pour ajouter des équipements (Caméras, Switchs...).</div>
+                <div class="help-item">❌ <strong>Zone Suppr. :</strong> Créez un cadre rouge pour tout effacer dedans.</div>
+                <div class="help-item">🔲 <strong>Zone Sélect. :</strong> Créez un cadre violet pour sélectionner un groupe et le déplacer</div>
+                <div class="help-item">✏️ <strong>Liens :</strong> Mode manuel pour relier Parent ➝ Enfant.</div>
+            </div>
+
+            <hr>
+
+            <h3>Raccourcis Clavier & Souris</h3>
+            <table class="shortcuts-table">
+                <tr>
+                    <td><span class="key">Ctrl</span> + <span class="key">C</span> / <span class="key">V</span></td>
+                    <td>Copier / Coller 📋</td>
+                </tr>
+                <tr>
+                    <td><span class="key">Suppr</span></td>
+                    <td>Supprimer l'élément sélectionné 🗑️</td>
+                </tr>
+                <tr>
+                    <td><span class="key">Ctrl</span> + <span class="key">Z</span></td>
+                    <td>Annuler la dernière action ↩️</td>
+                </tr>
+                <tr>
+                    <td><span class="key">Ctrl</span> + <span class="key">Y</span></td>
+                    <td>Rétablir la dernière action ↪️</td>
+                </tr>
+                 <tr>
+                    <td><span class="key">Double Clic</span></td>
+                    <td>Modifier un équipement (Nom, IP...) 📝</td>
+                </tr>
+                <tr>
+                    <td><span class="key">Clic Droit</span></td>
+                    <td>Modifier un Lien (Type, Mettre en forme, Supprimer...) ✨</td>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="help-footer">
+            <button class="action-btn" onclick="toggleHelp()">J'ai compris !</button>
+        </div>
+    </div>
+</div>
       </div>    
     </div>
 
