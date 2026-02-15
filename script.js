@@ -2621,81 +2621,181 @@ function clearBrowserSave() {
 }
 
 /* ==========================================================================
-   GESTION COPIER / COLLER (CTRL+C / CTRL+V)
+   GESTION DE L'AIDE (MODALE)
    ========================================================================== */
 
-// Variable globale pour stocker l'objet copié
+function toggleHelp() {
+    const modal = document.getElementById("helpModal");
+    
+    // Si elle est cachée (none) ou vide, on l'affiche (flex)
+    if (modal.style.display === "none" || modal.style.display === "") {
+        modal.style.display = "flex";
+    } else {
+        modal.style.display = "none";
+    }
+}
+
+// Fonction bonus : Fermer si on clique sur le fond gris (l'overlay)
+function closeHelpOnOutsideClick(e) {
+    if (e.target.id === "helpModal") {
+        toggleHelp();
+    }
+}
+
+/* ==========================================================================
+   GESTIONNAIRE CLAVIER UNIFIÉ (ECHAP, SUPPR, COPIER, COLLER)
+   ========================================================================== */
+
+// Variable pour le Copier/Coller
 let memoireTampon = null; 
 
 document.addEventListener('keydown', function(e) {
-    // 1. SÉCURITÉ : On ne fait rien si l'utilisateur écrit dans un champ texte
+    
+    // 1. SÉCURITÉ : On ignore si on écrit dans un champ texte
     if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.target.tagName === "TEXTAREA") return;
 
-    // --- CTRL + C (COPIER) ---
-    if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) {
-        if (selectedEquipmentId) {
-            const eq = equipments.find(item => item.id === selectedEquipmentId);
+    // console.log("Touche :", e.key); // Décommentez pour tester
+
+    // ----------------------------------------------------------------------
+    // A. TOUCHE ECHAP (Fermer fenêtres / Désélectionner)
+    // ----------------------------------------------------------------------
+    if (e.key === "Escape") {
+        const helpModal = document.getElementById("helpModal");
+        const addModal = document.getElementById("addModal");
+        
+        // Ferme les modales si elles sont ouvertes
+        if (helpModal && helpModal.style.display === "flex") toggleHelp();
+        if (addModal && addModal.style.display === "flex") closeAddModal();
+        
+        // Désélectionne tout
+        deselectAll();
+        if (typeof clearMultiSelection === 'function') clearMultiSelection();
+    }
+
+    // ----------------------------------------------------------------------
+    // B. TOUCHE SUPPR / BACKSPACE (Supprimer sélection)
+    // ----------------------------------------------------------------------
+    if (e.key === "Delete" || e.key === "Backspace") {
+        let itemsToDelete = [];
+
+        // Cas 1 : Multi-sélection
+        if (typeof multiSelectedIds !== 'undefined' && multiSelectedIds.length > 0) {
+            itemsToDelete = [...multiSelectedIds];
+        } 
+        // Cas 2 : Sélection unique
+        else if (selectedEquipmentId) {
+            itemsToDelete = [selectedEquipmentId];
+        }
+
+        if (itemsToDelete.length > 0) {
+            e.preventDefault(); 
             
-            if (eq) {
-                e.preventDefault();
-                // On copie les données dans la mémoire
-                memoireTampon = {
-                    type: eq.type,
-                    deviceName: eq.deviceName + " (Copie)", // On ajoute "Copie" au nom
-                    ip: eq.ip,
-                    loc: eq.loc,
-                    // Mettez 'null' ci-dessous si vous voulez que la copie soit détachée (sans fil)
-                    parent: eq.parent, 
-                    photo: eq.photo || null 
-                };
-                showToast("📋 Équipement copié !");
+            // On demande confirmation
+            if (confirm(`Supprimer ${itemsToDelete.length} élément(s) ?`)) {
+                
+                // --- ETAPE 1 : NETTOYAGE VISUEL FORCÉ (C'est ça qui corrige votre bug) ---
+                itemsToDelete.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.remove(); // On l'arrache du HTML directement
+                });
+
+                // --- ETAPE 2 : NETTOYAGE DES DONNÉES ---
+                // On garde seulement ceux qui NE SONT PAS dans la liste à supprimer
+                equipments = equipments.filter(eq => !itemsToDelete.includes(eq.id));
+                
+                // On nettoie les liens des orphelins (ceux qui étaient connectés aux objets supprimés)
+                equipments.forEach(eq => {
+                    if (itemsToDelete.includes(eq.parent)) {
+                        eq.parent = null;
+                        delete eq.connectionStyle;
+                        delete eq.controlPoints;
+                        delete eq.sourcePort; // Important de nettoyer les ports aussi
+                        delete eq.targetPort;
+                    }
+                    // Nettoyage inverse (si l'objet supprimé était un enfant)
+                    if (itemsToDelete.includes(eq.id)) {
+                         // Rien à faire ici car l'objet eq est déjà filtré au dessus
+                    }
+                });
+
+                // --- ETAPE 3 : FINALISATION ---
+                deselectAll();
+                if (typeof clearMultiSelection === 'function') clearMultiSelection();
+                
+                // On force le redessin des liens (car les objets ont disparu, les traits doivent disparaitre aussi)
+                updateConnectionsOnly(); 
+                
+                saveState();
+                render(); // Redessine tout proprement pour être sûr
+                markAsUnsaved();
+                showToast("🗑️ Élément(s) supprimé(s)");
             }
         }
     }
 
-    // --- CTRL + V (COLLER) ---
+    // ----------------------------------------------------------------------
+    // C. CTRL + C (COPIER)
+    // ----------------------------------------------------------------------
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) {
+        if (selectedEquipmentId) {
+            const eq = equipments.find(item => item.id === selectedEquipmentId);
+            if (eq) {
+                e.preventDefault();
+                memoireTampon = {
+                    type: eq.type,
+                    deviceName: eq.deviceName + " (Copie)",
+                    ip: eq.ip,
+                    loc: eq.loc,
+                    parent: eq.parent, 
+                    photo: eq.photo || null 
+                };
+                showToast("📋 Copié !");
+            }
+        }
+    }
+
+    // ----------------------------------------------------------------------
+    // D. CTRL + V (COLLER)
+    // ----------------------------------------------------------------------
     if ((e.ctrlKey || e.metaKey) && (e.key === 'v' || e.key === 'V')) {
         if (memoireTampon) {
             e.preventDefault();
 
-            // On calcule le centre de l'écran pour coller l'objet là où on regarde
+            // Calcul du centre de l'écran
             const wrapper = document.getElementById("workspace-wrapper");
-            // wrapper.scrollLeft = position de la barre de défilement horizontale
-            // + 300 = décalage pour être à peu près au milieu
             const centerX = (wrapper.scrollLeft + 300) / currentZoom; 
             const centerY = (wrapper.scrollTop + 300) / currentZoom;
 
-            // Création de l'objet via votre fonction existante
+            // Création
             const newId = addSingleNode(
                 memoireTampon.type,
                 memoireTampon.deviceName,
                 memoireTampon.ip,
                 memoireTampon.loc,
                 memoireTampon.parent, 
-                centerX, // Position X calculée
-                centerY  // Position Y calculée
+                centerX, 
+                centerY 
             );
 
-            // Gestion de la photo (car addSingleNode ne la gère pas par défaut)
+            // Gestion Photo
             if (memoireTampon.photo) {
                 const newEq = equipments.find(e => e.id === newId);
-                if (newEq) {
-                    newEq.photo = memoireTampon.photo;
-                }
+                if (newEq) newEq.photo = memoireTampon.photo;
             }
 
-            // Sauvegarde et affichage
+            // Finalisation
             saveState();       
             render();          
             markAsUnsaved();   
             
-            // On sélectionne automatiquement le nouvel objet
+            // Sélection du nouvel objet
             deselectAll();
             selectedEquipmentId = newId;
-            // On force un petit render pour afficher le cadre bleu de sélection
             setTimeout(render, 50); 
             
-            showToast("📋 Élément collé !");
+            showToast("📋 Collé !");
         }
     }
 });
+
+
