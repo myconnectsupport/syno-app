@@ -1803,3 +1803,41 @@ body.dark-mode .context-option i { color: #5ac8fa; }
 .help-header h2 i {
     font-size: 20px; /* L'icône un peu plus grande que le texte */
 }
+
+/* ==========================================
+   PORTS DE CONNEXION (Priorité Absolue)
+   ========================================== */
+.port-dot {
+    width: 30px !important;
+    height: 30px !important;
+    background-color: transparent !important;
+    position: absolute; 
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: crosshair;
+    
+    /* LE CORRECTIF EST ICI : */
+    z-index: 99999 !important; /* Passe devant les nœuds, les liens, et les poignées */
+    pointer-events: auto !important; /* Force la détection du clic */
+}
+
+/* Le visuel du port */
+.port-dot::after {
+    content: '';
+    display: block;
+    width: 12px; /* Un peu plus gros pour être visible */
+    height: 12px;
+    background-color: #34C759;
+    border: 2px solid white; /* Bordure blanche pour contraste */
+    border-radius: 50%;
+    pointer-events: none;
+    box-shadow: 0 0 3px rgba(0,0,0,0.5);
+    transition: transform 0.2s;
+}
+
+.port-dot:hover::after {
+    transform: scale(1.5);
+    background-color: #32D74B;
+}
