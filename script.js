@@ -1412,8 +1412,6 @@ function showPorts(equipment, nodeElement) {
   
   for (let i = 0; i < 20; i++) {
     const portPos = getPortPosition(equipment, i);
-    
-    // Calcul de la position relative
     const relX = portPos.x - equipment.x;
     const relY = portPos.y - equipment.y;
     
@@ -1422,18 +1420,26 @@ function showPorts(equipment, nodeElement) {
     portDot.style.left = relX + 'px';
     portDot.style.top = relY + 'px';
     
-    // Stocker les infos dans le DOM pour les retrouver facilement
+    // Données vitales
     portDot.dataset.eqId = equipment.id;
     portDot.dataset.portIndex = i;
 
-    // Événement Souris : Démarrer la création de lien
+    // --- LE CORRECTIF EST ICI ---
     portDot.addEventListener("mousedown", (e) => {
-        e.stopPropagation(); // Empêche de bouger l'équipement
-        e.preventDefault();  // Empêche la sélection de texte
-        startLinkCreation(equipment.id, i, e); // <--- LANCE LA CRÉATION
+        e.stopPropagation(); 
+        e.preventDefault();
+
+        // 1. CAS RECONNEXION (Ligne Orange active)
+        if (typeof isReconnecting !== 'undefined' && isReconnecting) {
+            console.log("🟠 Validation Reconnexion sur le port", i);
+            applyReconnection(equipment.id, i);
+            return; // On s'arrête là, on ne crée pas de nouveau lien
+        }
+
+        // 2. CAS CRÉATION NORMALE (Ligne Verte)
+        startLinkCreation(equipment.id, i, e); 
     });
     
-    // Feedback visuel si le port est utilisé
     if (isPortUsed(equipment.id, i)) {
       portDot.classList.add('port-used');
     }
@@ -1468,6 +1474,13 @@ function isPortUsed(equipmentId, portIndex) {
    ========================================================================== */
 
 function startLinkCreation(eqId, portIndex, e) {
+  // ============================================================
+  // CORRECTIF ANTI-CONFLIT
+  // Si on est déjà en mode "Reconnexion" (Câble orange en main),
+  // on INTERDIT de démarrer une nouvelle création de lien.
+  // ============================================================
+  if (typeof isReconnecting !== 'undefined' && isReconnecting) return;
+
   isCreatingLink = true;
   linkStartData = { id: eqId, portIndex: portIndex };
   
@@ -2231,24 +2244,35 @@ function addEquipment() {
       } 
       // ... (Reste du code Ajout Unique inchangé) ...
       else {
-          // Copiez le bloc "CAS AJOUT UNIQUE" précédent ici si nécessaire
+          // --- CAS AJOUT UNIQUE (CORRIGÉ) ---
           let safeX = Math.max(50, scrollX);
+          
+          // 1. Création de l'équipement
           const newId = addSingleNode(type, deviceName, ip, locPE, parent, safeX, scrollY);
-          // ... suite ajout unique
+          
+          // 2. Gestion intelligente de la connexion
           if (parent) {
             const child = equipments.find(e => e.id === newId);
             const parentNode = equipments.find(e => e.id === parent);
+            
             if (child && parentNode) {
-                child.sourcePort = 12; child.targetPort = 2; // Unique reste standard
-                const startPos = getPortPosition(parentNode, 12);
+                // AU LIEU DE FORCER LE 12 : On cherche le premier port disponible en bas
+                const freePort = findFreePort(parentNode.id, 'bottom');
+                
+                child.sourcePort = freePort; 
+                child.targetPort = 2; // Arrivée sur le haut de l'enfant (standard)
+
+                // On génère le tracé intelligent pour éviter les lignes droites moches
+                const startPos = getPortPosition(parentNode, freePort);
                 const endPos = getPortPosition(child, 2);
-                const midY = (startPos.y + endPos.y) / 2;
-                child.waypoints = [{ x: startPos.x, y: midY }, { x: endPos.x, y: midY }];
+                
+                // Utilisation du générateur de chemin qui évite les obstacles
+                child.waypoints = generateSmartWaypoints(startPos, endPos, freePort, [child.id, parentNode.id]);
             }
           }
           showToast("Équipement ajouté !");
       }
-    }
+    } // Fin de la fonction addEquipment
    }
   
   markAsUnsaved();
@@ -3007,11 +3031,6 @@ function exportToExcel() {
    GESTION DES POIGNÉES ORANGES (MODIFICATION DES LIENS)
    ========================================================================== */
 
-// Variables pour le drag orange
-let isDraggingOrange = false;
-let draggedOrangeData = null;
-let orangeTempLine = null;
-
 function drawPortHandles(equipment, parentEquipment, svg) {
   // 1. Poignée Source (Côté Parent)
   // On utilise '|| 12' comme sécurité si le port n'est pas défini
@@ -3024,123 +3043,243 @@ function drawPortHandles(equipment, parentEquipment, svg) {
   createHandleCircle(svg, targetPos.x, targetPos.y, equipment.id, "target");
 }
 
+/* ==========================================================================
+   MODIFICATION : POIGNÉES ORANGES "JUMBO" (TRÈS GROSSES)
+   ========================================================================== */
 function createHandleCircle(svg, cx, cy, eqId, type) {
   const handle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
   handle.setAttribute("cx", cx);
   handle.setAttribute("cy", cy);
-  handle.setAttribute("r", 7); // Taille de la boule
-  handle.setAttribute("fill", "#FF9500"); // Orange
-  handle.setAttribute("stroke", "white");
-  handle.setAttribute("stroke-width", 2);
-  handle.style.cursor = "grab";
+  
+  // 1. VISUEL : On passe de 8 à 12 (C'est gros !)
+  handle.setAttribute("r", 12); 
+  
+  // 2. ZONE DE CLIC : On passe de 35 à 50 (Immense zone invisible)
+  handle.setAttribute("fill", "#FF9500");
+  handle.setAttribute("stroke", "transparent"); 
+  handle.setAttribute("stroke-width", "50"); 
+  
+  // Style
+  handle.style.paintOrder = "stroke"; 
+  handle.style.cursor = "grab"; // Curseur "Main ouverte"
   handle.style.pointerEvents = "all"; 
+  
+  // Ombre pour mieux le voir (optionnel mais joli)
+  handle.style.filter = "drop-shadow(0px 2px 2px rgba(0,0,0,0.3))";
 
-  // C'est ici qu'on empêche le conflit avec le déplacement de l'objet
-  handle.addEventListener("mousedown", (e) => {
-    e.stopPropagation(); // STOP : Ne pas bouger l'équipement
+  // Événement Clic
+  handle.addEventListener("click", (e) => {
+    e.stopPropagation(); 
     e.preventDefault();
-    startDraggingPortHandle(eqId, type, e);
+    toggleReconnectionMode(eqId, type, cx, cy);
   });
 
   svg.appendChild(handle);
+  
+  // 3. CIBLE BLANCHE : Plus grosse aussi (4px)
+  const center = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  center.setAttribute("cx", cx); 
+  center.setAttribute("cy", cy);
+  center.setAttribute("r", 4); 
+  center.setAttribute("fill", "white");
+  center.style.pointerEvents = "none";
+  svg.appendChild(center);
 }
 
-function startDraggingPortHandle(equipmentId, endType, e) {
-  isDraggingOrange = true;
-  draggedOrangeData = { equipmentId, endType };
-  
-  // Créer une ligne visuelle temporaire (Orange)
-  const svg = document.getElementById("connections-layer");
-  orangeTempLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
-  orangeTempLine.setAttribute("stroke", "#FF9500");
-  orangeTempLine.setAttribute("stroke-width", "3");
-  orangeTempLine.setAttribute("stroke-dasharray", "5,5");
-  svg.appendChild(orangeTempLine);
+/* ==========================================================================
+   GESTION RECONNEXION (MODE "CLICK-CLICK")
+   ========================================================================== */
 
-  // On récupère les positions pour dessiner la ligne temporaire
-  const eq = equipments.find(e => e.id === equipmentId);
-  const parent = equipments.find(e => e.id === eq.parent);
-  
-  let fixedX, fixedY;
-  
-  // Si on bouge la source, le point fixe est la cible (et inversement)
-  if (endType === "source") {
-      const p = getPortPosition(eq, eq.targetPort !== undefined ? eq.targetPort : 2);
-      fixedX = p.x; fixedY = p.y;
-  } else {
-      const p = getPortPosition(parent, eq.sourcePort !== undefined ? eq.sourcePort : 12);
-      fixedX = p.x; fixedY = p.y;
-  }
-  
-  orangeTempLine.setAttribute("x1", fixedX);
-  orangeTempLine.setAttribute("y1", fixedY);
-  orangeTempLine.setAttribute("x2", fixedX); // Suivra la souris
-  orangeTempLine.setAttribute("y2", fixedY);
+let isReconnecting = false;
+let reconnectionData = null; // Stocke { equipmentId, endType, fixedX, fixedY }
+let reconnectionLine = null;
 
-  document.addEventListener("mousemove", onOrangeMove);
-  document.addEventListener("mouseup", onOrangeUp);
+function toggleReconnectionMode(equipmentId, endType, handleX, handleY) {
+    if (isReconnecting) { cancelReconnection(); return; }
+    
+    isReconnecting = true; // Active le mode
+    
+    // Récupération des infos
+    const eq = equipments.find(e => e.id === equipmentId);
+    const parent = equipments.find(e => e.id === eq.parent);
+    
+    let fixedX, fixedY;
+    if (endType === "source") {
+        // On bouge la source, donc la cible est fixe
+        const p = getPortPosition(eq, eq.targetPort !== undefined ? eq.targetPort : 2);
+        fixedX = p.x; fixedY = p.y;
+    } else {
+        // On bouge la cible, donc la source est fixe
+        const p = getPortPosition(parent, eq.sourcePort !== undefined ? eq.sourcePort : 12);
+        fixedX = p.x; fixedY = p.y;
+    }
+
+    reconnectionData = { equipmentId, endType, fixedX, fixedY };
+
+    // Dessin de la ligne orange
+    const svg = document.getElementById("connections-layer");
+    reconnectionLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    reconnectionLine.setAttribute("x1", fixedX); reconnectionLine.setAttribute("y1", fixedY);
+    reconnectionLine.setAttribute("x2", handleX); reconnectionLine.setAttribute("y2", handleY);
+    reconnectionLine.setAttribute("stroke", "#FF9500");
+    reconnectionLine.setAttribute("stroke-width", "3");
+    reconnectionLine.setAttribute("stroke-dasharray", "5,5");
+    
+    // IMPORTANT : La ligne ne doit jamais bloquer la souris
+    reconnectionLine.style.pointerEvents = "none"; 
+    
+    svg.appendChild(reconnectionLine);
+
+    // Messages
+    if (endType === "source") showToast("🔌 SOURCE : Cliquez sur un Switch");
+    else showToast("🎯 CIBLE : Cliquez sur une Caméra");
+
+    // On écoute juste le mouvement pour la ligne et le clavier pour annuler
+    document.addEventListener("mousemove", onReconnectionMouseMove);
+    document.addEventListener("keydown", onReconnectionKey);
+    
+    // AJOUT : Clic global pour ANNULER si on clique dans le vide
+    document.addEventListener("mousedown", onGlobalCancelClick);
+    
+    document.body.style.cursor = "crosshair";
 }
 
-function onOrangeMove(e) {
-  if (!isDraggingOrange || !orangeTempLine) return;
-  
-  const container = document.getElementById("workspace-container");
-  const rect = container.getBoundingClientRect();
-  const x = (e.clientX - rect.left) / currentZoom;
-  const y = (e.clientY - rect.top) / currentZoom;
-  
-  orangeTempLine.setAttribute("x2", x);
-  orangeTempLine.setAttribute("y2", y);
+function onGlobalCancelClick(e) {
+    // Si on clique sur un port ou une poignée, on laisse faire leurs propres écouteurs
+    if (e.target.closest(".port-dot") || e.target.closest("circle")) return;
+    
+    // Sinon, on annule
+    cancelReconnection();
 }
 
-function onOrangeUp(e) {
-  if (!isDraggingOrange) return;
-  
-  // Nettoyage
-  if (orangeTempLine) orangeTempLine.remove();
-  document.removeEventListener("mousemove", onOrangeMove);
-  document.removeEventListener("mouseup", onOrangeUp);
-  isDraggingOrange = false;
 
-  // Détection du port sous la souris (Vert ou autre)
-  const targetEl = document.elementFromPoint(e.clientX, e.clientY);
-  
-  if (targetEl && targetEl.classList.contains('port-dot')) {
-      const targetEqId = targetEl.dataset.eqId;
-      const targetPortIndex = parseInt(targetEl.dataset.portIndex);
-      const eq = equipments.find(e => e.id === draggedOrangeData.equipmentId);
+function onReconnectionMouseMove(e) {
+    if (!isReconnecting || !reconnectionLine) return;
 
-      // Logique de rebranchement
-      if (draggedOrangeData.endType === "source") {
-          // On change le PARENT (Source)
-          if (targetEqId === eq.id) {
-             // Protection : pas de boucle sur soi-même
-             return; 
-          }
-          
-          eq.parent = targetEqId;
-          eq.sourcePort = targetPortIndex;
-          showToast("🔗 Source modifiée !");
-          
-      } else {
-          // On change la CIBLE (Target)
-          // La cible DOIT rester sur le même équipement, on change juste de port
-          if (targetEqId !== eq.id) {
-             showToast("❌ L'extrémité cible doit rester sur le même équipement");
-             return;
-          }
-          eq.targetPort = targetPortIndex;
-          showToast("🎯 Cible déplacée !");
-      }
+    const container = document.getElementById("workspace-container");
+    const rect = container.getBoundingClientRect();
+    const mouseX = (e.clientX - rect.left) / currentZoom;
+    const mouseY = (e.clientY - rect.top) / currentZoom;
 
-      // Reset de la courbe bleue pour qu'elle se redessine proprement
-      delete eq.waypoints;
-      
-      saveState();
-      render();
-      markAsUnsaved();
-  }
+    // La ligne suit la souris
+    reconnectionLine.setAttribute("x2", mouseX);
+    reconnectionLine.setAttribute("y2", mouseY);
 }
+
+function onReconnectionClick(e) {
+    if (!isReconnecting) return;
+
+    // 1. ASTUCE SUPRÊME : On cache la ligne orange une milliseconde
+    // pour être sûr que le 'elementFromPoint' voit le port vert dessous
+    if (reconnectionLine) reconnectionLine.style.display = 'none';
+    
+    // 2. On regarde ce qu'il y a vraiment sous la souris
+    let targetEl = document.elementFromPoint(e.clientX, e.clientY);
+    
+    // 3. On réaffiche la ligne immédiatement
+    if (reconnectionLine) reconnectionLine.style.display = 'block';
+
+    // 4. On vérifie si on a touché un port (ou le centre du port)
+    // On utilise .closest() pour gérer le cas où on clique sur le petit point blanc au milieu
+    let portEl = targetEl ? targetEl.closest(".port-dot") : null;
+
+    if (portEl) {
+        // C'EST GAGNÉ ! On récupère les infos du port vert
+        const targetEqId = portEl.dataset.eqId;
+        const targetPortIndex = parseInt(portEl.dataset.portIndex);
+        
+        console.log("🟢 Port vert détecté sur :", targetEqId, "Port:", targetPortIndex);
+        
+        // On stoppe tout autre événement
+        e.stopPropagation();
+        e.preventDefault();
+
+        // On lance la validation
+        applyReconnection(targetEqId, targetPortIndex);
+        return;
+    }
+
+    // 5. Si on clique vraiment à côté (dans le vide), on annule
+    // On vérifie qu'on ne clique pas sur un menu ou l'interface
+    if (!e.target.closest(".floating-ui") && !e.target.closest(".context-menu")) {
+        // Optionnel : Vous pouvez commenter cette ligne si vous trouvez l'annulation trop sensible
+        cancelReconnection();
+    }
+}
+
+function applyReconnection(targetEqId, targetPortIndex) {
+    const oldChildId = String(reconnectionData.equipmentId);
+    const newTargetId = String(targetEqId); // L'équipement cliqué
+    
+    const oldChild = equipments.find(e => String(e.id) === oldChildId);
+    if (!oldChild) return;
+
+    // --- CAS SOURCE (On change le parent) ---
+    if (reconnectionData.endType === "source") {
+        if (newTargetId === oldChildId) {
+            showToast("❌ Impossible : C'est le même équipement.");
+            return;
+        }
+        oldChild.parent = newTargetId;
+        oldChild.sourcePort = targetPortIndex;
+        delete oldChild.waypoints;
+        showToast("✅ Parent modifié !");
+    } 
+    
+    // --- CAS CIBLE (On change l'enfant/port) ---
+    else {
+        // Même équipement (Changement de port)
+        if (newTargetId === oldChildId) {
+            oldChild.targetPort = targetPortIndex;
+            delete oldChild.waypoints;
+            showToast("✅ Port modifié !");
+        }
+        // Transfert sur un autre équipement
+        else {
+            const newChild = equipments.find(e => String(e.id) === newTargetId);
+            if (newChild.parent && !confirm(`Remplacer la connexion de ${newChild.deviceName} ?`)) {
+                return;
+            }
+            // Transfert des données
+            newChild.parent = oldChild.parent;
+            newChild.sourcePort = oldChild.sourcePort;
+            newChild.targetPort = targetPortIndex;
+            delete newChild.waypoints;
+
+            // Reset de l'ancien
+            oldChild.parent = null;
+            delete oldChild.sourcePort; delete oldChild.targetPort; delete oldChild.waypoints;
+            
+            showToast("✅ Câble déplacé !");
+        }
+    }
+
+    saveState();
+    render();
+    markAsUnsaved();
+    cleanupReconnection();
+}
+
+function cancelReconnection() {
+    showToast("Annulation...");
+    cleanupReconnection();
+}
+
+function cleanupReconnection() {
+    isReconnecting = false;
+    reconnectionData = null;
+    
+    if (reconnectionLine) {
+        reconnectionLine.remove();
+        reconnectionLine = null;
+    }
+
+    document.removeEventListener("mousemove", onReconnectionMouseMove);
+    document.removeEventListener("keydown", onReconnectionKey);
+    document.removeEventListener("mousedown", onGlobalCancelClick);
+    document.body.style.cursor = "default";
+}
+
 
 /* ==========================================================================
    AUTO SAVE (LOCAL STORAGE)
