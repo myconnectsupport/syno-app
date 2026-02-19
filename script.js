@@ -72,38 +72,50 @@ function saveState() {
 function undo() {
     if (historyStep > 0) {
         historyStep--;
-        restoreState();
+        // ✅ On lui passe la bonne "photo" de l'historique
+        restoreState(historyStack[historyStep]); 
     }
 }
 
 function redo() {
     if (historyStep < historyStack.length - 1) {
         historyStep++;
-        restoreState();
+        // ✅ Pareil ici
+        restoreState(historyStack[historyStep]);
     }
 }
 
-// Exemple de fonction à mettre à jour (peut s'appeler restoreState ou être dans undo())
 function restoreState(stateStr) {
-    const data = JSON.parse(stateStr);
+    if (!stateStr) return; // Sécurité si l'historique est vide
 
-    // VÉRIFICATION DE COMPATIBILITÉ
-    if (Array.isArray(data)) {
-        // C'est un ANCIEN format (juste des équipements)
-        equipments = data;
-        zones = []; // On vide les zones car il n'y en avait pas avant
-    } else {
-        // C'est le NOUVEAU format (objet complet)
-        equipments = data.equipments || [];
-        zones = data.zones || [];
-        labels = data.labels || []; // <--- AJOUTER ICI
+    try {
+        const data = JSON.parse(stateStr);
+
+        // VÉRIFICATION DE COMPATIBILITÉ (Ancien / Nouveau format)
+        if (Array.isArray(data)) {
+            equipments = data;
+            zones = []; 
+            if (typeof labels !== 'undefined') labels = [];
+        } else {
+            equipments = data.equipments || [];
+            zones = data.zones || [];
+            if (typeof labels !== 'undefined') labels = data.labels || [];
+        }
+
+        // On redessine tout l'écran avec les anciennes données
+        render(); 
+        if (typeof renderZones === "function") renderZones();
+        if (typeof renderLabels === "function") renderLabels();
+        
+        // On met à jour l'apparence des boutons (Grisé ou cliquable)
+        updateUndoRedoButtons();
+        
+        // On sauvegarde dans le navigateur pour ne rien perdre
+        if (typeof saveToBrowser === "function") saveToBrowser();
+        
+    } catch (e) {
+        console.error("Erreur lors de la restauration de l'historique :", e);
     }
-
-    // On redessine tout
-    render(); 
-    // Si vous avez créé la fonction renderZones, appelez-la aussi :
-    if (typeof renderZones === "function") renderZones();
-    if (typeof renderLabels === "function") renderLabels(); // <--- AJOUTER ICI
 }
 
 function updateUndoRedoButtons() {
